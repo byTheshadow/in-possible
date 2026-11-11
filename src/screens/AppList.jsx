@@ -6,7 +6,7 @@ import { playSound } from '../services/soundService';
 // 应用列表（主界面）：杂志式大方块。之后应用增多都放这里。
 // 还没做的应用先指向“还在建设中”页面，如实告诉用户，不假装能用。
 const TILES = [
-  { title: '聊天', desc: '和角色说话', color: 'tile-k1', wide: true, to: soonPath('聊天', '/apps') },
+  { title: '聊天', desc: '和角色说话', color: 'tile-k1', wide: true, to: '/chats' },
   { title: '日历', desc: '提醒、日程、待办、健康', color: 'tile-k2', to: soonPath('日历', '/apps') },
   { title: '待办', desc: '记下要做的事', color: 'tile-k3', to: soonPath('待办', '/apps') },
   { title: '提醒', desc: '吃药、喝水、起床', color: 'tile-k4', to: soonPath('提醒', '/apps') },

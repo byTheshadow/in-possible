@@ -23,7 +23,7 @@ export default function Welcome() {
       playSound('error');
     }
     // 用替换而不是新增历史记录，这样按返回键不会回到首次说明
-    navigate('/apps', { replace: true });
+    navigate('/chats', { replace: true });
   };
 
   return (

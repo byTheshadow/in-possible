@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import AccessibilitySettings from './screens/AccessibilitySettings';
 import AppList from './screens/AppList';
+import ChatList from './screens/ChatList';
 import Diagnostics from './screens/Diagnostics';
 import Placeholder from './screens/Placeholder';
 import Settings from './screens/Settings';
@@ -15,6 +16,7 @@ import './styles/layout.css';
 // 路由表。聊天列表、聊天室、日历做好后加到这里，并把聊天列表设为默认入口。
 const ROUTES = {
   '/welcome': { Component: Welcome, label: '首次使用说明' },
+  '/chats': { Component: ChatList, label: '聊天列表' },
   '/apps': { Component: AppList, label: '应用列表' },
   '/settings': { Component: Settings, label: '设置' },
   '/settings/accessibility': { Component: AccessibilitySettings, label: '无障碍设置' },
@@ -39,7 +41,7 @@ export default function App() {
         seen = true;
       }
       if (!alive) return;
-      if (!hasHash()) navigate(seen ? '/apps' : '/welcome', { replace: true });
+      if (!hasHash()) navigate(seen ? '/chats' : '/welcome', { replace: true });
       setReady(true);
     })();
     return () => {
