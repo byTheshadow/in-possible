@@ -1,160 +1,69 @@
+// src/App.jsx
 import { useEffect, useState } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
+import AccessibilitySettings from './screens/AccessibilitySettings';
+import AppList from './screens/AppList';
+import Diagnostics from './screens/Diagnostics';
+import Placeholder from './screens/Placeholder';
+import Settings from './screens/Settings';
+import Welcome from './screens/Welcome';
 import { announce } from './services/announcer';
-import {
-  FONT_SCALE_OPTIONS,
-  THEME_OPTIONS,
-  getAccessibilitySettings,
-  subscribeAccessibility,
-  updateAccessibilitySettings,
-} from './services/accessibilityService';
-import { getSetting, setSetting } from './services/db';
+import { getSetting } from './services/db';
+import { hasHash, navigate, useRoute } from './services/router';
+import './styles/layout.css';
 
-// 临时的“地基检查”页：用来在真机上验证主题、字号、焦点环、播报、错误隔离、数据库。
-// 阶段 1 做页面骨架时会被聊天列表等真正的页面替换。
-
-function useAccessibility() {
-  const [settings, setSettings] = useState(getAccessibilitySettings());
-  useEffect(() => subscribeAccessibility(setSettings), []);
-  return settings;
-}
-
-function Bomb({ explode }) {
-  if (explode) throw new Error('这是一次测试用的故意崩溃');
-  return <p className="muted">这一块目前正常。</p>;
-}
+// 路由表。聊天列表、聊天室、日历做好后加到这里，并把聊天列表设为默认入口。
+const ROUTES = {
+  '/welcome': { Component: Welcome, label: '首次使用说明' },
+  '/apps': { Component: AppList, label: '应用列表' },
+  '/settings': { Component: Settings, label: '设置' },
+  '/settings/accessibility': { Component: AccessibilitySettings, label: '无障碍设置' },
+  '/settings/diagnostics': { Component: Diagnostics, label: '诊断页' },
+  '/soon': { Component: Placeholder, label: '建设中' },
+};
 
 export default function App() {
-  const settings = useAccessibility();
-  const [explode, setExplode] = useState(false);
+  const { path } = useRoute();
+  const [ready, setReady] = useState(false);
 
-  const change = async (patch, message) => {
-    try {
-      await updateAccessibilitySettings(patch);
-      announce(message);
-    } catch (error) {
-      announce(`保存失败：${error?.message || '未知错误'}。刚才的改动本次可用，但下次打开可能丢失。`, { assertive: true });
+  // 第一次进入：没看过说明就去首次使用说明，看过就去应用列表。
+  // 地址里已经有页面（刷新或书签）时不打扰，停在原地。
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      let seen = false;
+      try {
+        seen = await getSetting('welcomeSeen', false);
+      } catch (error) {
+        announce(`读取设置失败：${error?.message || '未知错误'}。已直接进入应用列表。`, { assertive: true });
+        seen = true;
+      }
+      if (!alive) return;
+      if (!hasHash()) navigate(seen ? '/apps' : '/welcome', { replace: true });
+      setReady(true);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const route = ROUTES[path];
+
+  // 地址写错或不存在：回到应用列表，并告诉用户
+  useEffect(() => {
+    if (ready && path && !route) {
+      announce('没有找到这个页面，已回到应用列表', { assertive: true });
+      navigate('/apps', { replace: true });
     }
-  };
+  }, [ready, path, route]);
 
-  const checkDatabase = async () => {
-    try {
-      const stamp = String(Date.now());
-      await setSetting('selfCheck', stamp);
-      const back = await getSetting('selfCheck');
-      if (back === stamp) announce('数据库读写正常');
-      else announce('数据库读出的内容和写入的不一致', { assertive: true });
-    } catch (error) {
-      announce(`数据库出错：${error?.message || '未知错误'}`, { assertive: true });
-    }
-  };
+  if (!ready || !route) return null;
 
+  const { Component, label } = route;
+  // key 用路径：换页面时错误边界一起重置，上一页的崩溃不会带到下一页
   return (
-    <main className="stack" style={{ padding: '1.25rem', maxWidth: 640, margin: '0 auto' }}>
-      <header>
-        <p style={{ fontWeight: 800 }}>in-possible</p>
-        <h1>零极限</h1>
-        <p className="muted">地基检查页。这一页只用来在手机上验证基础功能。</p>
-      </header>
-
-      <section className="card stack" aria-labelledby="sec-theme">
-        <h2 id="sec-theme">配色</h2>
-        <div className="row">
-          {THEME_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className="btn"
-              aria-pressed={settings.theme === option.id}
-              onClick={() => change({ theme: option.id }, `已切换到${option.label}配色`)}
-            >
-              {option.label}
-              {settings.theme === option.id && <span aria-hidden="true">（当前）</span>}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="card stack" aria-labelledby="sec-font">
-        <h2 id="sec-font">字号</h2>
-        <div className="row">
-          {FONT_SCALE_OPTIONS.map((option) => (
-            <button
-              key={option.scale}
-              type="button"
-              className="btn"
-              aria-pressed={settings.fontScale === option.scale}
-              onClick={() => change({ fontScale: option.scale }, `字号已设为${option.label}，${option.hint}`)}
-            >
-              {option.label} {option.hint}
-              {settings.fontScale === option.scale && <span aria-hidden="true">（当前）</span>}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="card stack" aria-labelledby="sec-touch">
-        <h2 id="sec-touch">按钮和单手</h2>
-        <div className="row">
-          <button
-            type="button"
-            className="btn"
-            aria-pressed={settings.largeButtons}
-            onClick={() =>
-              change({ largeButtons: !settings.largeButtons }, settings.largeButtons ? '已关闭大按钮' : '已开启大按钮')
-            }
-          >
-            大按钮{settings.largeButtons ? '：开' : '：关'}
-          </button>
-          <button
-            type="button"
-            className="btn"
-            aria-pressed={settings.oneHand}
-            onClick={() =>
-              change({ oneHand: !settings.oneHand }, settings.oneHand ? '已关闭单手模式' : '已开启单手模式')
-            }
-          >
-            单手模式{settings.oneHand ? '：开' : '：关'}
-          </button>
-        </div>
-        <p className="muted">单手模式这一版只保存开关，布局要到阶段 1 的页面骨架里才会生效。</p>
-      </section>
-
-      <section className="card stack" aria-labelledby="sec-announce">
-        <h2 id="sec-announce">播报测试</h2>
-        <div className="row">
-          <button type="button" className="btn btn-primary" onClick={() => announce('这是一条普通播报')}>
-            普通播报
-          </button>
-          <button
-            type="button"
-            className="btn btn-accent"
-            onClick={() => announce('这是一条紧急播报，应该立刻读出', { assertive: true })}
-          >
-            紧急播报
-          </button>
-        </div>
-      </section>
-
-      <section className="card stack" aria-labelledby="sec-db">
-        <h2 id="sec-db">数据库自检</h2>
-        <button type="button" className="btn btn-primary btn-block" onClick={checkDatabase}>
-          测试读写
-        </button>
-      </section>
-
-      <section className="card stack" aria-labelledby="sec-crash">
-        <h2 id="sec-crash">错误隔离测试</h2>
-        <ErrorBoundary label="崩溃测试区">
-          <Bomb explode={explode} />
-        </ErrorBoundary>
-        <button type="button" className="btn btn-block" onClick={() => setExplode(true)}>
-          让这一块崩溃
-        </button>
-        <button type="button" className="btn btn-block" onClick={() => setExplode(false)}>
-          恢复这一块
-        </button>
-      </section>
-    </main>
+    <ErrorBoundary key={path} label={label}>
+      <Component />
+    </ErrorBoundary>
   );
 }

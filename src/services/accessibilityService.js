@@ -1,4 +1,5 @@
-// 无障碍设置：主题、字号、大按钮、单手模式。
+// src/services/accessibilityService.js
+// 无障碍设置：主题、字号、大按钮、单手模式、提示音开关。
 //
 // 存储：db.settings 里 key = 'accessibilitySettings' 的一条记录。
 // 同时在 localStorage 放一份缓存（key = 'ip_a11y_cache'），index.html 里的内联脚本会
@@ -28,6 +29,7 @@ export const DEFAULT_ACCESSIBILITY_SETTINGS = {
   fontScale: 1.25,
   largeButtons: false,
   oneHand: false,
+  soundEnabled: true,
 };
 
 const THEME_COLORS = { light: '#F5F0E8', dark: '#151012' };
@@ -41,6 +43,7 @@ export const normalizeAccessibilitySettings = (raw) => {
     fontScale: ALLOWED_SCALES.includes(scale) ? scale : DEFAULT_ACCESSIBILITY_SETTINGS.fontScale,
     largeButtons: raw?.largeButtons === true,
     oneHand: raw?.oneHand === true,
+    soundEnabled: raw?.soundEnabled !== false,
   };
 };
 
