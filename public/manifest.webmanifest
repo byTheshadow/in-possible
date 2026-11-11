@@ -1,0 +1,11 @@
+{
+  "name": "in-possible 零极限",
+  "short_name": "零极限",
+  "description": "面向视障和低视力用户的角色陪伴应用",
+  "lang": "zh-CN",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#F5F0E8",
+  "theme_color": "#F5F0E8"
+}

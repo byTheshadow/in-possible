@@ -1,0 +1,93 @@
+/*
+  设计变量：取自定稿的视觉原型（浅色 / 深色各一套）。
+  只用 CSS 变量，不用 Tailwind。组件里的颜色一律引用变量，不写死色值。
+
+  对比度（已按原型色值计算）：
+  浅色  正文 text/bg 15.7，次要文字 text2/bg 8.9，主按钮白字/玫红 6.74（按钮是大号粗体，按大字标准 4.5 达标）
+  深色  正文 text/bg 16.6，次要文字 text2/bg 10.9，主按钮 8.0
+  上线前仍需在真机上实测。
+*/
+
+:root,
+[data-theme='light'] {
+  --bg: #f5f0e8;
+  --surface: #fffcf7;
+  --surface2: #eae2d6;
+  --text: #1d1618;
+  --text2: #4a3f42;
+  --border: #857a78;
+
+  /* 四个分类色，上面一律用近黑字 --kon */
+  --k1: #f7b4ce;
+  --k2: #c9b9ff;
+  --k3: #ffc94d;
+  --k4: #8edcb8;
+  --kon: #1d1618;
+
+  --primary: #b3124f;
+  --on-primary: #ffffff;
+  --primary-c: #ffd9e6;
+  --on-primary-c: #5e0a29;
+  --accent: #5b3fa8;
+  --on-accent: #ffffff;
+  --accent-c: #e6defa;
+  --on-accent-c: #2d1b69;
+  --warn-c: #ffe9c7;
+  --on-warn-c: #5a3300;
+
+  --shadow: 0 6px 18px rgba(60, 20, 40, 0.1);
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #151012;
+  --surface: #211a1d;
+  --surface2: #382e32;
+  --text: #f8eef2;
+  --text2: #d3c0c8;
+  --border: #9c8590;
+
+  --k1: #f7b4ce;
+  --k2: #c9b9ff;
+  --k3: #ffc94d;
+  --k4: #8edcb8;
+  --kon: #1d1618;
+
+  --primary: #ff8db5;
+  --on-primary: #3d0018;
+  --primary-c: #5e1b38;
+  --on-primary-c: #ffd9e6;
+  --accent: #c4b0ff;
+  --on-accent: #1f0f55;
+  --accent-c: #3b2c6b;
+  --on-accent-c: #e6defa;
+  --warn-c: #4d3300;
+  --on-warn-c: #ffe2a8;
+
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+:root {
+  /*
+    字体：标题用思源宋体，正文用思源黑体。
+    这一版不联网加载网络字体（Google Fonts 在国内常常打不开），
+    只写回退链，设备上有就用，没有就用系统自带的宋体和黑体。
+  */
+  --font-sans: 'Noto Sans SC', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'SimSun', serif;
+
+  /* 字号档位：1 / 1.25 / 1.5 / 2，由无障碍设置写入；默认 125% */
+  --font-scale: 1.25;
+
+  /* 点按目标：不小于 48px。开启“大按钮”后放大到 64px */
+  --tap: 48px;
+  --gap: 12px;
+  --radius: 24px;
+  --radius-lg: 28px;
+}
+
+[data-large-buttons='true'] {
+  --tap: 64px;
+  --gap: 16px;
+}
