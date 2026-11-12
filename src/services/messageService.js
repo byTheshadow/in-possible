@@ -15,17 +15,19 @@
 // 聊天设置字段（name、userProfile、systemPrompt、reactionGuide、keepAlive、typingStyle）
 // 在这里给出默认值，聊天设置页（包 2c-1）通过 updateChatSettings 写入。
 //   name          对话名。空的时候显示“对话 1、对话 2……”（同一个角色的聊天按 id 排名）
-//   userProfile   { avatar（图片 data 地址，空是用名字首字）, name, persona, inputHint }
+//   userProfile   { avatarImageId（images 表里的图片 id，null 是用名字首字）, name, persona, inputHint,
+//                   avatar（旧版本存的 data 地址，读聊天时会自动转成图片 id，转完是空）}
 //   keepAlive     后台保活开关，现在只存开关，真正的保活到做提醒之前再加
 
 import db from './db';
 import { getCharacter, getOrCreateChat } from './chatService';
+import { dataUrlToBlob, deleteImage, saveImage } from './imageService';
 
 export const TYPING_STYLES = ['dots', 'text', 'wave'];
 
 export const CHAT_DEFAULTS = {
   name: '',
-  userProfile: { avatar: '', name: '', persona: '', inputHint: '' },
+  userProfile: { avatar: '', avatarImageId: null, name: '', persona: '', inputHint: '' },
   systemPrompt: '',
   reactionGuide: '',
   keepAlive: false,
@@ -50,6 +52,22 @@ const withMessageDefaults = (row) => {
   return { ...row, quoteOfId: row.quoteOfId ?? null, variants, variantIndex };
 };
 
+// 旧版本把头像直接存成 data 地址放在记录里：读到时转成 Blob 存进 images 表，记录里只留图片 id。
+// 转换失败不要紧，旧地址还留着，下次再试，头像照样能显示。
+const migrateLegacyAvatar = async (chat) => {
+  const legacy = chat?.userProfile?.avatar;
+  if (typeof legacy !== 'string' || !legacy.startsWith('data:image/')) return chat;
+  try {
+    const blob = await dataUrlToBlob(legacy);
+    const imageId = await saveImage(blob, 'avatar');
+    const userProfile = { ...chat.userProfile, avatar: '', avatarImageId: imageId };
+    await db.chats.update(chat.id, { userProfile });
+    return { ...chat, userProfile };
+  } catch (error) {
+    return chat;
+  }
+};
+
 const toKey = (value) => {
   const number = Number(value);
   return Number.isFinite(number) && value !== null && value !== '' ? number : null;
@@ -60,7 +78,10 @@ const toKey = (value) => {
 // 找不到返回 null。
 export const resolveChat = async ({ chatId, characterId }) => {
   const chatKey = toKey(chatId);
-  if (chatKey !== null) return withChatDefaults(await db.chats.get(chatKey));
+  if (chatKey !== null) {
+    const row = withChatDefaults(await db.chats.get(chatKey));
+    return row ? withChatDefaults(await migrateLegacyAvatar(row)) : null;
+  }
 
   const characterKey = toKey(characterId);
   if (characterKey !== null) {
@@ -161,6 +182,7 @@ export const updateChatSettings = async (chatId, patch) => {
   if (patch.userProfile) {
     next.userProfile = { ...CHAT_DEFAULTS.userProfile, ...(row.userProfile || {}), ...patch.userProfile };
   }
+  const oldImageId = row.userProfile?.avatarImageId ?? null;
   ['name', 'systemPrompt', 'reactionGuide'].forEach((key) => {
     if (key in patch) next[key] = String(patch[key] ?? '');
   });
@@ -168,6 +190,15 @@ export const updateChatSettings = async (chatId, patch) => {
   if ('keepAlive' in patch) next.keepAlive = Boolean(patch.keepAlive);
 
   await db.chats.update(id, next);
+  // 换了头像或移除了头像：旧图片没人用了，一起删掉
+  const newImageId = next.userProfile ? next.userProfile.avatarImageId ?? null : oldImageId;
+  if (oldImageId !== null && oldImageId !== newImageId) {
+    try {
+      await deleteImage(oldImageId);
+    } catch (error) {
+      // 删不掉不影响保存；诊断页的“清理没用到的图片”以后能扫掉
+    }
+  }
   return withChatDefaults({ ...row, ...next });
 };
 
@@ -180,9 +211,20 @@ export const clearChatMessages = (chatId) =>
   });
 
 // 删除整个对话框：删掉这个聊天和它的所有消息。角色本身保留（角色只在角色库里删）。
-export const deleteChat = (chatId) =>
-  db.transaction('rw', db.chats, db.messages, async () => {
-    const id = Number(chatId);
+export const deleteChat = async (chatId) => {
+  const id = Number(chatId);
+  const row = await db.chats.get(id);
+  await db.transaction('rw', db.chats, db.messages, async () => {
     await db.messages.where('chatId').equals(id).delete();
     await db.chats.delete(id);
   });
+  // 这个聊天的用户头像图片也没人用了
+  const imageId = row?.userProfile?.avatarImageId ?? null;
+  if (imageId !== null) {
+    try {
+      await deleteImage(imageId);
+    } catch (error) {
+      // 同上
+    }
+  }
+};

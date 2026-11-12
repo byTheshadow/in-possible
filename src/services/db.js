@@ -1,3 +1,4 @@
+// src/services/db.js
 // 数据库骨架：Dexie（IndexedDB），独立库名，与 WHEN I with U 的数据互不相通。
 //
 // 约定：
@@ -26,6 +27,13 @@ db.version(1).stores({
   characters: '++id, name, updatedAt',
   chats: '++id, characterId, updatedAt',
   messages: '++id, chatId, timestamp',
+});
+
+// 版本 2：新增 images 表，存头像等图片的 Blob（规矩见 imageService.js）。
+// 聊天、角色、消息的记录里只放图片 id：用户头像是 chats 记录的 userProfile.avatarImageId，
+// 角色头像是 characters 记录的 avatarImageId。旧表和旧数据都不动。
+db.version(2).stores({
+  images: '++id',
 });
 
 export const getSetting = async (key, fallback = null) => {

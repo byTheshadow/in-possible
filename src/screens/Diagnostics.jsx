@@ -5,6 +5,7 @@ import Screen from '../components/Screen';
 import { announce } from '../services/announcer';
 import { clearChatData, seedSampleCharacters } from '../services/chatService';
 import { getSetting, setSetting } from '../services/db';
+import { formatBytes, getStorageReport, purgeOrphanImages, requestPersistentStorage } from '../services/imageService';
 import { playSound } from '../services/soundService';
 
 // 开发用诊断页：在真机上验证播报、数据库、错误隔离。正式发布前可以隐藏。
@@ -17,6 +18,7 @@ function Bomb({ explode }) {
 export default function Diagnostics() {
   const [explode, setExplode] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [storageNote, setStorageNote] = useState('');
 
   const checkDatabase = async () => {
     try {
@@ -34,6 +36,48 @@ export default function Diagnostics() {
       announce(`数据库出错：${error?.message || '未知错误'}`, { assertive: true });
       playSound('error');
     }
+  };
+
+  // 存储用量：图片张数和大小、整个网站的用量和上限、是否已申请持久存储
+  const checkStorage = async () => {
+    try {
+      const report = await getStorageReport();
+      const parts = [`图片 ${report.imageCount} 张，共 ${formatBytes(report.imageBytes)}`];
+      if (report.orphanCount > 0) parts.push(`其中 ${report.orphanCount} 张没有被用到，可以清理`);
+      if (report.usage !== null && report.quota !== null) parts.push(`整个网站已用 ${formatBytes(report.usage)}，浏览器给的上限约 ${formatBytes(report.quota)}`);
+      if (report.persisted === true) parts.push('已申请持久存储，浏览器不会在空间紧张时自动清掉这里的数据');
+      else if (report.persisted === false) parts.push('还没有持久存储，空间紧张时浏览器可能清掉这里的数据');
+      const message = `${parts.join('。')}。`;
+      setStorageNote(message);
+      announce(message);
+      playSound('success');
+    } catch (error) {
+      announce(`读取存储用量失败：${error?.message || '未知错误'}`, { assertive: true });
+      playSound('error');
+    }
+  };
+
+  const purgeImages = async () => {
+    try {
+      const { removed, bytes } = await purgeOrphanImages();
+      const message = removed > 0 ? `已清理 ${removed} 张没用到的图片，腾出 ${formatBytes(bytes)}` : '没有发现没用到的图片';
+      setStorageNote(message);
+      announce(message);
+      playSound('success');
+    } catch (error) {
+      announce(`清理失败：${error?.message || '未知错误'}`, { assertive: true });
+      playSound('error');
+    }
+  };
+
+  const askPersist = async () => {
+    const result = await requestPersistentStorage();
+    let message = '这个浏览器不支持持久存储';
+    if (result === true) message = '已申请成功，浏览器不会在空间紧张时自动清掉这里的数据';
+    else if (result === false) message = '浏览器没有答应。把应用添加到主屏幕、常用这个网站，通常更容易通过';
+    setStorageNote(message);
+    announce(message, { assertive: result !== true });
+    playSound(result === true ? 'success' : 'error');
   };
 
   const seedSamples = async () => {
@@ -88,6 +132,21 @@ export default function Diagnostics() {
         <button type="button" className="btn btn-primary btn-block" onClick={checkDatabase}>
           测试读写
         </button>
+      </section>
+
+      <section className="card stack" aria-labelledby="diag-storage">
+        <h2 id="diag-storage">存储和图片</h2>
+        <p className="muted">头像等图片单独存放，并且存之前都会缩小。这里可以看用量、清理没用到的图片、申请持久存储。</p>
+        <button type="button" className="btn btn-primary btn-block" onClick={checkStorage}>
+          查看存储用量
+        </button>
+        <button type="button" className="btn btn-block" onClick={purgeImages}>
+          清理没用到的图片
+        </button>
+        <button type="button" className="btn btn-block" onClick={askPersist}>
+          申请持久存储
+        </button>
+        {storageNote && <p className="field-note">{storageNote}</p>}
       </section>
 
       <section className="card stack" aria-labelledby="diag-chat">

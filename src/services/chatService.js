@@ -112,9 +112,10 @@ export const seedSampleCharacters = async () => {
   return { created: samples.length, existing: 0 };
 };
 
-// 开发用：清空角色、聊天、消息（不动 settings）
+// 开发用：清空角色、聊天、消息和图片（不动 settings）
 export const clearChatData = () =>
-  db.transaction('rw', db.characters, db.chats, db.messages, async () => {
+  db.transaction('rw', db.characters, db.chats, db.messages, db.images, async () => {
+    await db.images.clear();
     await db.messages.clear();
     await db.chats.clear();
     await db.characters.clear();

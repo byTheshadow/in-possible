@@ -4,7 +4,7 @@ import Avatar from '../components/Avatar';
 import Screen from '../components/Screen';
 import { announce } from '../services/announcer';
 import { getCharacter } from '../services/chatService';
-import { fileToAvatarData } from '../services/imageService';
+import { fileToAvatarBlob, saveImage, deleteImage } from '../services/imageService';
 import {
   clearChatMessages,
   deleteChat,
@@ -30,10 +30,13 @@ const STYLE_OPTIONS = [
   { value: 'wave', label: '波浪', hint: '几根竖条像波浪一样起伏' },
 ];
 
+// 头像在草稿里的样子：avatarId 是已经存好的图片 id（或 null），pending 是刚选好、还没保存的图片 Blob。
+// 点“保存”时才把 pending 存进 images 表，所以选了又不保存不会在数据库里留下垃圾。
 const toDraft = (chat) => ({
   name: chat.name || '',
   userName: chat.userProfile.name || '',
-  avatar: chat.userProfile.avatar || '',
+  avatarId: chat.userProfile.avatarImageId ?? null,
+  pending: null,
   persona: chat.userProfile.persona || '',
   inputHint: chat.userProfile.inputHint || '',
   systemPrompt: chat.systemPrompt || '',
@@ -48,6 +51,9 @@ const trimmedDraft = (draft) => ({
   userName: draft.userName.trim(),
   inputHint: draft.inputHint.trim(),
 });
+
+// 比较“有没有改过”用：Blob 没法直接比较，换成有没有
+const signature = (draft) => JSON.stringify({ ...trimmedDraft(draft), pending: draft.pending ? 'new' : null });
 
 export default function ChatSettings() {
   const { query } = useRoute();
@@ -66,6 +72,8 @@ export default function ChatSettings() {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const fileRef = useRef(null);
+  const previewRef = useRef('');
+  const [preview, setPreview] = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -103,7 +111,7 @@ export default function ChatSettings() {
     };
   }, [idParam]);
 
-  const dirty = status === 'ready' && JSON.stringify(trimmedDraft(draft)) !== JSON.stringify(saved);
+  const dirty = status === 'ready' && signature(draft) !== signature(saved);
 
   const say = (message, { assertive = false, sound = null } = {}) => {
     announce(message, { assertive });
@@ -121,6 +129,19 @@ export default function ChatSettings() {
     setConfirmLeave(false);
   };
 
+  // 刚选好的图片的预览地址：换图或离开页面时释放
+  const setPreviewBlob = (blob) => {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    previewRef.current = blob ? URL.createObjectURL(blob) : '';
+    setPreview(previewRef.current);
+  };
+  useEffect(
+    () => () => {
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    },
+    []
+  );
+
   const pickImage = () => {
     disarm();
     playSound('tap');
@@ -134,8 +155,9 @@ export default function ChatSettings() {
     setBusy('image');
     say('正在处理图片');
     try {
-      const data = await fileToAvatarData(file);
-      change('avatar', data);
+      const blob = await fileToAvatarBlob(file);
+      setPreviewBlob(blob);
+      change('pending', blob);
       say('图片已选好。点“保存”后才会生效', { sound: 'success' });
     } catch (error) {
       say(`没能用这张图片：${error?.message || '未知错误'}`, { assertive: true, sound: 'error' });
@@ -146,7 +168,9 @@ export default function ChatSettings() {
 
   const removeImage = () => {
     disarm();
-    change('avatar', '');
+    setPreviewBlob(null);
+    setDraft((previous) => ({ ...previous, avatarId: null, pending: null }));
+    setConfirmLeave(false);
     say('已移除图片，头像会改用名字的第一个字。点“保存”后才会生效', { sound: 'tap' });
   };
 
@@ -155,12 +179,19 @@ export default function ChatSettings() {
     disarm();
     setBusy('save');
     const clean = trimmedDraft(draft);
+    let newImageId = null;
     try {
+      let avatarImageId = clean.avatarId;
+      if (clean.pending) {
+        newImageId = await saveImage(clean.pending, 'avatar');
+        avatarImageId = newImageId;
+      }
       const updated = await updateChatSettings(chat.id, {
         name: clean.name,
         userProfile: {
           name: clean.userName,
-          avatar: clean.avatar,
+          avatarImageId,
+          avatar: '',
           persona: clean.persona,
           inputHint: clean.inputHint,
         },
@@ -170,11 +201,14 @@ export default function ChatSettings() {
         keepAlive: clean.keepAlive,
       });
       setChat(updated);
+      setPreviewBlob(null);
       const next = toDraft(updated);
       setSaved(next);
       setDraft(next);
       say('已保存', { sound: 'success' });
     } catch (error) {
+      // 图片已经存了但设置没存成：把这张图删掉，不留垃圾
+      if (newImageId !== null) deleteImage(newImageId).catch(() => {});
       say(`保存失败，你填的内容还在页面上：${error?.message || '未知错误'}`, { assertive: true, sound: 'error' });
     } finally {
       setBusy('');
@@ -267,7 +301,7 @@ export default function ChatSettings() {
   }
 
   const previewName = draft.userName.trim() || '我';
-  const hasImage = draft.avatar !== '';
+  const hasImage = Boolean(draft.pending) || draft.avatarId !== null;
 
   const actions = (
     <div className="cs-actions">
@@ -305,7 +339,7 @@ export default function ChatSettings() {
         <p className="muted">只用在这个对话里，别的对话可以填不一样的。</p>
 
         <div className="cs-avatar-row">
-          <Avatar character={{ id: chat.id, name: previewName, avatar: draft.avatar }} size="xl" />
+          <Avatar character={{ id: chat.id, name: previewName, avatar: draft.pending ? preview : '', avatarImageId: draft.pending ? null : draft.avatarId }} size="xl" />
           <p className="cs-avatar-note">{hasImage ? '头像：用你选的图片' : `头像：用名字的第一个字“${Array.from(previewName)[0]}”`}</p>
         </div>
         <input ref={fileRef} type="file" accept="image/*" className="cs-file" tabIndex={-1} aria-hidden="true" onChange={onFile} />

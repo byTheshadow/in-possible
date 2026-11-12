@@ -201,6 +201,10 @@ export default function ChatRoom() {
   const onComposerFocus = () => {
     window.clearTimeout(typingTimerRef.current);
     setTyping(true);
+    // 键盘弹出、页面变矮之后，让最新的消息还留在能看到的地方
+    window.setTimeout(() => {
+      if (endRef.current) endRef.current.scrollIntoView({ block: 'end' });
+    }, 350);
   };
   const onComposerBlur = () => {
     window.clearTimeout(typingTimerRef.current);
@@ -215,6 +219,11 @@ export default function ChatRoom() {
   }, [generating, status]);
 
   const userName = chat?.userProfile?.name || '我';
+  // 用户自己的头像（和角色头像共用 Avatar；颜色按聊天 id 轮换）
+  const userPerson = useMemo(
+    () => ({ id: chat?.id, name: userName, avatar: chat?.userProfile?.avatar, avatarImageId: chat?.userProfile?.avatarImageId ?? null }),
+    [chat, userName]
+  );
   const roleName = (message) => (message.role === 'user' ? userName : character?.name || '');
   const inputHint = chat?.userProfile?.inputHint || '说点什么……';
   const typingStyle = chat?.typingStyle || 'dots';
@@ -503,7 +512,7 @@ export default function ChatRoom() {
           {!isUser && !huge && <Avatar character={character} size="md" />}
           <div className="cr-col">
             <p className="cr-meta">
-              {!isUser && huge && <Avatar character={character} size="xs" />}
+              {huge && <Avatar character={isUser ? userPerson : character} size="xs" />}
               {who} · {time}
             </p>
             <div className={`cr-bubble ${isUser ? '' : colorClass}`}>
@@ -516,6 +525,7 @@ export default function ChatRoom() {
             </div>
             {variantRow}
           </div>
+          {isUser && !huge && <Avatar character={userPerson} size="md" />}
         </article>
       </li>
     );
@@ -683,6 +693,7 @@ export default function ChatRoom() {
       title={character ? character.name : '聊天'}
       docTitle={character ? `和${character.name}聊天` : '聊天'}
       subtitle={subtitle}
+      fixed
       leading={character ? <Avatar character={character} size="lg" /> : null}
       actions={actions}
     >

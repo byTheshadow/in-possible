@@ -12,6 +12,29 @@
   padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
 }
 
+/* 固定版（聊天室）：整页高度等于屏幕，顶部和底部不动，只有中间的 .screen-body 自己滚动。
+   --app-h 由 Screen.jsx 跟着“可见区域”设置（弹出键盘时会变小），没设置就用 100dvh。 */
+.screen.screen-fixed {
+  height: var(--app-h, 100dvh);
+  min-height: 0;
+  overflow-y: auto; /* 平时用不上；字号特别大、中间区域被挤没时，整页才允许滚动，不会把内容裁掉 */
+}
+.screen-fixed .screen-header {
+  flex: none;
+}
+.screen-fixed .screen-body {
+  flex: 1 1 0;
+  min-height: 8rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.screen-fixed .screen-actions {
+  flex: none;
+  max-height: 50%;
+  overflow-y: auto;
+}
+
 .brand {
   font-weight: 800;
   font-size: 1rem;
