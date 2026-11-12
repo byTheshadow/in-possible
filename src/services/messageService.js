@@ -17,10 +17,12 @@
 //   name          对话名。空的时候显示“对话 1、对话 2……”（同一个角色的聊天按 id 排名）
 //   userProfile   { avatarImageId（images 表里的图片 id，null 是用名字首字）, name, persona, inputHint,
 //                   avatar（旧版本存的 data 地址，读聊天时会自动转成图片 id，转完是空）}
+//   bubbleStyle   气泡颜色，{ character, user }，每边 { preset, bg, fg }（见 bubbleStyle.js）
 //   keepAlive     后台保活开关，现在只存开关，真正的保活到做提醒之前再加
 
 import db from './db';
 import { getCharacter, getOrCreateChat } from './chatService';
+import { DEFAULT_BUBBLE_STYLE, normalizeBubbleStyle } from './bubbleStyle';
 import { dataUrlToBlob, deleteImage, saveImage } from './imageService';
 
 export const TYPING_STYLES = ['dots', 'text', 'wave'];
@@ -30,6 +32,7 @@ export const CHAT_DEFAULTS = {
   userProfile: { avatar: '', avatarImageId: null, name: '', persona: '', inputHint: '' },
   systemPrompt: '',
   reactionGuide: '',
+  bubbleStyle: DEFAULT_BUBBLE_STYLE,
   keepAlive: false,
   typingStyle: 'dots',
 };
@@ -41,6 +44,7 @@ export const withChatDefaults = (chat) => {
     ...CHAT_DEFAULTS,
     ...chat,
     userProfile: { ...CHAT_DEFAULTS.userProfile, ...(chat.userProfile || {}) },
+    bubbleStyle: normalizeBubbleStyle(chat.bubbleStyle),
     unread: Number(chat.unread) || 0,
   };
 };
@@ -186,6 +190,7 @@ export const updateChatSettings = async (chatId, patch) => {
   ['name', 'systemPrompt', 'reactionGuide'].forEach((key) => {
     if (key in patch) next[key] = String(patch[key] ?? '');
   });
+  if ('bubbleStyle' in patch) next.bubbleStyle = normalizeBubbleStyle(patch.bubbleStyle);
   if ('typingStyle' in patch) next.typingStyle = TYPING_STYLES.includes(patch.typingStyle) ? patch.typingStyle : 'dots';
   if ('keepAlive' in patch) next.keepAlive = Boolean(patch.keepAlive);
 

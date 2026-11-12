@@ -90,3 +90,46 @@
   font-size: 0.95rem;
   overflow-wrap: anywhere;
 }
+
+/* 气泡颜色（包 2c-2） */
+.cs-bubble-group {
+  gap: 0.5rem;
+}
+.cs-swatch {
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  border: 2px solid var(--text);
+  box-sizing: border-box;
+}
+.cs-custom {
+  padding: 0.2rem 0 0.2rem 0.4rem;
+}
+.cs-color-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.cs-color-row .field-input {
+  flex: 1;
+  min-width: 0;
+}
+.cs-color-pick {
+  flex: none;
+  width: 3.4rem;
+  min-height: calc(var(--tap) * 1.17);
+  padding: 0.2rem;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  cursor: pointer;
+}
+.cs-bubble-preview {
+  padding: 0.55rem 0.8rem;
+  border-radius: 16px 16px 16px 4px;
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}

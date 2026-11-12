@@ -46,11 +46,14 @@ export default function ChatList() {
 
   const actions = (
     <div className="chat-actions">
+      <button type="button" className="btn btn-primary btn-block" onClick={() => go('/chats/new')}>
+        + 新建对话
+      </button>
+      <button type="button" className="btn btn-block" onClick={() => go(soonPath('新建角色', '/chats'))}>
+        新建角色
+      </button>
       <button type="button" className="btn btn-block" onClick={() => go('/apps')}>
         全部应用
-      </button>
-      <button type="button" className="btn btn-primary btn-block" onClick={() => go(soonPath('新建角色', '/chats'))}>
-        新建角色
       </button>
     </div>
   );
@@ -82,10 +85,10 @@ export default function ChatList() {
     );
   } else {
     body = (
-      <nav aria-label="角色列表">
+      <nav aria-label="对话列表">
         <ul className="list" role="list">
-          {rows.map(({ character, chat, unread, lastMessage, sortAt }) => (
-            <li key={character.id}>
+          {rows.map(({ key, character, chat, dialogName, unread, lastMessage, sortAt }) => (
+            <li key={key}>
               <a
                 href={`#${chatPath({ chat, character })}`}
                 className={`chat-card chat-card-k${avatarIndex(character) + 1}${unread > 0 ? ' is-unread' : ''}`}
@@ -94,7 +97,7 @@ export default function ChatList() {
                 <Avatar character={character} />
                 <span className="chat-main">
                   <span className="chat-row">
-                    <span className="chat-name">{character.name}</span>
+                    <span className="chat-name">{dialogName ? `${character.name} · ${dialogName}` : character.name}</span>
                     <span className="chat-time">{formatListTime(lastMessage?.timestamp || sortAt)}</span>
                   </span>
                   <span className="chat-preview">{previewText(lastMessage)}</span>
@@ -109,7 +112,7 @@ export default function ChatList() {
   }
 
   return (
-    <Screen title="聊天" subtitle="选一个角色，继续聊。" actions={actions}>
+    <Screen title="聊天" subtitle="选一个对话，继续聊。同一个角色可以有好几个对话。" actions={actions}>
       {body}
     </Screen>
   );

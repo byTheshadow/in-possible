@@ -123,3 +123,16 @@
   border-radius: 16px;
   font-size: 1.15rem;
 }
+/* 新建对话：整行是一个按钮，样子和聊天列表的行一致 */
+.new-chat-card {
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.new-chat-card:disabled {
+  opacity: 0.7;
+  cursor: default;
+}

@@ -6,6 +6,7 @@ import AiSettings from './screens/AiSettings';
 import AppList from './screens/AppList';
 import ChatRoom from './screens/ChatRoom';
 import ChatList from './screens/ChatList';
+import NewChat from './screens/NewChat';
 import ChatSettings from './screens/ChatSettings';
 import Diagnostics from './screens/Diagnostics';
 import Placeholder from './screens/Placeholder';
@@ -20,6 +21,7 @@ import './styles/layout.css';
 const ROUTES = {
   '/welcome': { Component: Welcome, label: '首次使用说明' },
   '/chats': { Component: ChatList, label: '聊天列表' },
+  '/chats/new': { Component: NewChat, label: '新建对话' },
   '/chat': { Component: ChatRoom, label: '聊天室' },
   '/chat/settings': { Component: ChatSettings, label: '聊天设置' },
   '/apps': { Component: AppList, label: '应用列表' },

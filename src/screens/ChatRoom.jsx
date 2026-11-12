@@ -5,11 +5,13 @@ import Screen from '../components/Screen';
 import { getAccessibilitySettings, subscribeAccessibility } from '../services/accessibilityService';
 import { AiError, buildChatMessages, DEFAULT_API_CONFIG, getApiConfig, isApiConfigured, requestReply } from '../services/aiService';
 import { announce } from '../services/announcer';
+import { bubbleInlineStyle } from '../services/bubbleStyle';
 import { getCharacter } from '../services/chatService';
 import {
   addCharacterMessage,
   addUserMessage,
   addVariant,
+  getDialogName,
   listMessages,
   markChatRead,
   resolveChat,
@@ -96,6 +98,7 @@ export default function ChatRoom() {
   const [quoting, setQuoting] = useState(null);
   const [sending, setSending] = useState(false);
   const [config, setConfig] = useState(null);
+  const [dialogName, setDialogName] = useState('');
   const [generating, setGenerating] = useState(false);
   const [aiError, setAiError] = useState('');
   // 输入区里有东西拿着焦点（输入框、发送、让 TA 回复、取消引用）：底部两个按钮在画面上收起
@@ -156,8 +159,9 @@ export default function ChatRoom() {
           playSound('error');
           return;
         }
-        const rows = await listMessages(found.id);
+        const [rows, name] = await Promise.all([listMessages(found.id), getDialogName(found)]);
         if (!alive) return;
+        setDialogName(name);
         setChat(found);
         setCharacter(owner);
         setMessages(rows);
@@ -227,6 +231,9 @@ export default function ChatRoom() {
   const roleName = (message) => (message.role === 'user' ? userName : character?.name || '');
   const inputHint = chat?.userProfile?.inputHint || '说点什么……';
   const typingStyle = chat?.typingStyle || 'dots';
+  // 气泡颜色（每个聊天各自的设置）；默认时是 undefined，沿用样式表里的颜色
+  const characterBubbleStyle = bubbleInlineStyle(chat?.bubbleStyle?.character);
+  const userBubbleStyle = bubbleInlineStyle(chat?.bubbleStyle?.user);
 
   const focusInput = () => {
     if (inputRef.current) inputRef.current.focus();
@@ -515,7 +522,7 @@ export default function ChatRoom() {
               {huge && <Avatar character={isUser ? userPerson : character} size="xs" />}
               {who} · {time}
             </p>
-            <div className={`cr-bubble ${isUser ? '' : colorClass}`}>
+            <div className={`cr-bubble ${isUser ? '' : colorClass}`} style={isUser ? userBubbleStyle : characterBubbleStyle}>
               {quoteBlock}
               {message.text}
             </div>
@@ -572,7 +579,7 @@ export default function ChatRoom() {
                   {huge && <Avatar character={character} size="xs" />}
                   {character.name}
                 </p>
-                <div className={`cr-bubble ${colorClass}`}>
+                <div className={`cr-bubble ${colorClass}`} style={characterBubbleStyle}>
                   <TypingIndicator style={typingStyle} name={character.name} />
                 </div>
               </div>
@@ -687,6 +694,7 @@ export default function ChatRoom() {
   let subtitle = 'AI 还没接入';
   if (config === null) subtitle = undefined;
   else if (configured) subtitle = `AI：${config.model}`;
+  if (dialogName) subtitle = subtitle ? `${dialogName} · ${subtitle}` : dialogName;
 
   return (
     <Screen

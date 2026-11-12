@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import Avatar from '../components/Avatar';
 import Screen from '../components/Screen';
 import { announce } from '../services/announcer';
+import { BUBBLE_PRESETS, MIN_CONTRAST, bubbleColors, contrastRatio, normalizeHex } from '../services/bubbleStyle';
 import { getCharacter } from '../services/chatService';
 import { fileToAvatarBlob, saveImage, deleteImage } from '../services/imageService';
 import {
@@ -22,6 +23,8 @@ import '../styles/chatsettings.css';
 // 聊天设置页（包 2c-1）。每个聊天各自独立：用户个人信息、本窗提示词、打字指示器、后台保活开关、
 // 清空聊天记录、删除整个对话框。地址 /chat/settings?id=聊天id。
 // 改动先放在草稿里，点“保存”才写入；有没保存的改动时，点“返回聊天”要再点一次才会放弃。
+// 气泡颜色（包 2c-2）：角色的气泡和我的气泡各有 粉、紫、黄、薄荷、自定义；自定义可以改底色和字色，
+// 保存前检查对比度，低于 4.5 比 1 会提醒（再点一次才保存）。
 // 清空和删除都是点两下：第一下改按钮文字并紧急播报，第二下才执行。
 
 const STYLE_OPTIONS = [
@@ -32,6 +35,8 @@ const STYLE_OPTIONS = [
 
 // 头像在草稿里的样子：avatarId 是已经存好的图片 id（或 null），pending 是刚选好、还没保存的图片 Blob。
 // 点“保存”时才把 pending 存进 images 表，所以选了又不保存不会在数据库里留下垃圾。
+const SIDE_LABEL = { character: '角色的气泡', user: '我的气泡' };
+
 const toDraft = (chat) => ({
   name: chat.name || '',
   userName: chat.userProfile.name || '',
@@ -43,6 +48,7 @@ const toDraft = (chat) => ({
   reactionGuide: chat.reactionGuide || '',
   typingStyle: chat.typingStyle || 'dots',
   keepAlive: Boolean(chat.keepAlive),
+  bubble: { character: { ...chat.bubbleStyle.character }, user: { ...chat.bubbleStyle.user } },
 });
 
 const trimmedDraft = (draft) => ({
@@ -54,6 +60,87 @@ const trimmedDraft = (draft) => ({
 
 // 比较“有没有改过”用：Blob 没法直接比较，换成有没有
 const signature = (draft) => JSON.stringify({ ...trimmedDraft(draft), pending: draft.pending ? 'new' : null });
+
+// 一边气泡的颜色设置：五个单选、自定义时的两个颜色、预览、恢复默认
+function BubbleEditor({ id, label, value, onChange }) {
+  const custom = value.preset === 'custom';
+  const colors = custom ? { bg: normalizeHex(value.bg), fg: normalizeHex(value.fg) } : bubbleColors(value);
+  const ready = Boolean(colors && colors.bg && colors.fg);
+  const ratio = ready ? contrastRatio(colors.bg, colors.fg) : null;
+  const set = (patch) => onChange({ ...value, ...patch });
+
+  return (
+    <fieldset className="cs-fieldset cs-bubble-group">
+      <legend>{label}</legend>
+      {BUBBLE_PRESETS.map((preset) => (
+        <label key={preset.id} className={`cs-choice${value.preset === preset.id ? ' is-on' : ''}`}>
+          <input type="radio" name={id} value={preset.id} checked={value.preset === preset.id} onChange={() => set({ preset: preset.id })} />
+          <span className="cs-swatch" aria-hidden="true" style={{ background: preset.bg }} />
+          <span className="cs-choice-text">
+            <span className="cs-choice-title">{preset.label}</span>
+          </span>
+        </label>
+      ))}
+      <label className={`cs-choice${custom ? ' is-on' : ''}`}>
+        <input type="radio" name={id} value="custom" checked={custom} onChange={() => set({ preset: 'custom' })} />
+        <span className="cs-swatch" aria-hidden="true" style={{ background: normalizeHex(value.bg) || 'transparent' }} />
+        <span className="cs-choice-text">
+          <span className="cs-choice-title">自定义</span>
+          <span className="cs-choice-hint">自己选底色和字色</span>
+        </span>
+      </label>
+
+      {custom && (
+        <div className="cs-custom stack">
+          {[
+            { key: 'bg', name: '底色' },
+            { key: 'fg', name: '字色' },
+          ].map((item) => (
+            <div className="field" key={item.key}>
+              <label htmlFor={`${id}-${item.key}`}>{item.name}（# 加 6 位，例如 #f7b4ce）</label>
+              <div className="cs-color-row">
+                <input
+                  id={`${id}-${item.key}`}
+                  className="field-input"
+                  type="text"
+                  maxLength={7}
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  value={value[item.key]}
+                  onChange={(event) => set({ [item.key]: event.target.value })}
+                />
+                <input
+                  className="cs-color-pick"
+                  type="color"
+                  aria-label={`用色盘选${item.name}`}
+                  value={normalizeHex(value[item.key]) || '#000000'}
+                  onChange={(event) => set({ [item.key]: event.target.value })}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {value.preset === '' && <p className="muted">现在用的是默认颜色。</p>}
+      {value.preset !== '' && !ready && <p className="field-note">颜色代码不对。请写成 # 加 6 位，例如 #f7b4ce。</p>}
+      {ready && (
+        <>
+          <div className="cs-bubble-preview" style={{ background: colors.bg, color: colors.fg }}>
+            这是气泡的样子
+          </div>
+          <p className="muted">
+            对比度 {ratio.toFixed(1)} 比 1，{ratio >= MIN_CONTRAST ? '够清楚' : '偏低，保存时会提醒你'}。
+          </p>
+        </>
+      )}
+      <button type="button" className="btn btn-block" disabled={value.preset === ''} onClick={() => set({ preset: '' })}>
+        恢复默认颜色
+      </button>
+    </fieldset>
+  );
+}
 
 export default function ChatSettings() {
   const { query } = useRoute();
@@ -70,6 +157,7 @@ export default function ChatSettings() {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmLow, setConfirmLow] = useState(false);
 
   const fileRef = useRef(null);
   const previewRef = useRef('');
@@ -121,12 +209,20 @@ export default function ChatSettings() {
   const change = (key, value) => {
     setDraft((previous) => ({ ...previous, [key]: value }));
     setConfirmLeave(false);
+    setConfirmLow(false);
+  };
+
+  const changeBubble = (side, next) => {
+    setDraft((previous) => ({ ...previous, bubble: { ...previous.bubble, [side]: next } }));
+    setConfirmLeave(false);
+    setConfirmLow(false);
   };
 
   const disarm = () => {
     setConfirmClear(false);
     setConfirmDelete(false);
     setConfirmLeave(false);
+    setConfirmLow(false);
   };
 
   // 刚选好的图片的预览地址：换图或离开页面时释放
@@ -176,9 +272,34 @@ export default function ChatSettings() {
 
   const save = async () => {
     if (!chat || busy) return;
+    const clean = trimmedDraft(draft);
+
+    // 气泡颜色：自定义的颜色代码要对；对比度低于 4.5 比 1 先提醒，再点一次才保存
+    const bubble = {};
+    const lowSides = [];
+    for (const side of ['character', 'user']) {
+      const value = clean.bubble[side];
+      if (value.preset !== 'custom') {
+        bubble[side] = { ...value };
+        continue;
+      }
+      const bg = normalizeHex(value.bg);
+      const fg = normalizeHex(value.fg);
+      if (!bg || !fg) {
+        say(`${SIDE_LABEL[side]}的${bg ? '字色' : '底色'}不是正确的颜色代码。请写成 # 加 6 位，例如 #f7b4ce`, { assertive: true, sound: 'error' });
+        return;
+      }
+      bubble[side] = { preset: 'custom', bg, fg };
+      if (contrastRatio(bg, fg) < MIN_CONTRAST) lowSides.push(SIDE_LABEL[side]);
+    }
+    if (lowSides.length > 0 && !confirmLow) {
+      setConfirmLow(true);
+      say(`${lowSides.join('、')}的字色和底色对比度低于 4.5 比 1，字可能看不清。想改请调整颜色；仍要保存，请再点一次保存`, { assertive: true, sound: 'error' });
+      return;
+    }
+
     disarm();
     setBusy('save');
-    const clean = trimmedDraft(draft);
     let newImageId = null;
     try {
       let avatarImageId = clean.avatarId;
@@ -197,6 +318,7 @@ export default function ChatSettings() {
         },
         systemPrompt: clean.systemPrompt,
         reactionGuide: clean.reactionGuide,
+        bubbleStyle: bubble,
         typingStyle: clean.typingStyle,
         keepAlive: clean.keepAlive,
       });
@@ -306,7 +428,7 @@ export default function ChatSettings() {
   const actions = (
     <div className="cs-actions">
       <button type="button" className="btn btn-primary btn-block" onClick={save} disabled={busy !== ''}>
-        {busy === 'save' ? '正在保存……' : dirty ? '保存（有没保存的修改）' : '保存'}
+        {busy === 'save' ? '正在保存……' : confirmLow ? '对比度偏低，仍然保存（再点一次）' : dirty ? '保存（有没保存的修改）' : '保存'}
       </button>
       <button type="button" className="btn btn-block" onClick={backToChat}>
         {confirmLeave ? '放弃修改并返回' : '返回聊天'}
@@ -427,6 +549,13 @@ export default function ChatSettings() {
             用来指导角色怎么回应你，比如说话的语气、遇到什么情况该怎么反应。
           </p>
         </div>
+      </section>
+
+      <section className="card stack" aria-labelledby="cs-bubble">
+        <h2 id="cs-bubble">气泡颜色</h2>
+        <p className="muted">只对这个对话有效。自定义时会检查字色和底色的对比度，低于 4.5 比 1 会提醒你。</p>
+        <BubbleEditor id="cs-bubble-character" label="角色的气泡" value={draft.bubble.character} onChange={(next) => changeBubble('character', next)} />
+        <BubbleEditor id="cs-bubble-user" label="我的气泡" value={draft.bubble.user} onChange={(next) => changeBubble('user', next)} />
       </section>
 
       <section className="card stack" aria-labelledby="cs-typing">
