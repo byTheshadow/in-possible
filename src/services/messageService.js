@@ -12,13 +12,19 @@
 //   variantIndex  当前显示的是第几条（从 0 开始）。旧消息没有，读取时取最后一条
 //
 // chats 记录在 chatService.js 里已有 characterId、updatedAt、lastMessage、unread。
-// 聊天设置新字段（userProfile、systemPrompt、reactionGuide、keepAlive、typingStyle）
-// 只在这里给出默认值，聊天设置页（包 2c）才会真正写入它们。
+// 聊天设置字段（name、userProfile、systemPrompt、reactionGuide、keepAlive、typingStyle）
+// 在这里给出默认值，聊天设置页（包 2c-1）通过 updateChatSettings 写入。
+//   name          对话名。空的时候显示“对话 1、对话 2……”（同一个角色的聊天按 id 排名）
+//   userProfile   { avatar（图片 data 地址，空是用名字首字）, name, persona, inputHint }
+//   keepAlive     后台保活开关，现在只存开关，真正的保活到做提醒之前再加
 
 import db from './db';
 import { getCharacter, getOrCreateChat } from './chatService';
 
+export const TYPING_STYLES = ['dots', 'text', 'wave'];
+
 export const CHAT_DEFAULTS = {
+  name: '',
   userProfile: { avatar: '', name: '', persona: '', inputHint: '' },
   systemPrompt: '',
   reactionGuide: '',
@@ -133,3 +139,50 @@ export const setVariantIndex = ({ chatId, messageId, index }) =>
 
 // 进入聊天室后把未读清零
 export const markChatRead = (chatId) => db.chats.update(Number(chatId), { unread: 0 });
+
+// ---------- 包 2c-1：聊天设置 ----------
+
+// 对话名：自己起了名字就用它，没有就按同一个角色的聊天顺序叫“对话 1、对话 2……”
+export const getDialogName = async (chat) => {
+  const custom = typeof chat?.name === 'string' ? chat.name.trim() : '';
+  if (custom) return custom;
+  const siblings = await db.chats.where('characterId').equals(Number(chat.characterId)).sortBy('id');
+  const rank = siblings.findIndex((row) => row.id === chat.id) + 1;
+  return `对话 ${rank > 0 ? rank : 1}`;
+};
+
+// 保存聊天设置：只改传进来的字段，别的字段原样保留。返回补过默认值的新记录。
+export const updateChatSettings = async (chatId, patch) => {
+  const id = Number(chatId);
+  const row = await db.chats.get(id);
+  if (!row) throw new Error('这个聊天已经不在了');
+
+  const next = {};
+  if (patch.userProfile) {
+    next.userProfile = { ...CHAT_DEFAULTS.userProfile, ...(row.userProfile || {}), ...patch.userProfile };
+  }
+  ['name', 'systemPrompt', 'reactionGuide'].forEach((key) => {
+    if (key in patch) next[key] = String(patch[key] ?? '');
+  });
+  if ('typingStyle' in patch) next.typingStyle = TYPING_STYLES.includes(patch.typingStyle) ? patch.typingStyle : 'dots';
+  if ('keepAlive' in patch) next.keepAlive = Boolean(patch.keepAlive);
+
+  await db.chats.update(id, next);
+  return withChatDefaults({ ...row, ...next });
+};
+
+// 清空聊天记录：删掉这个聊天里所有消息（包括重新生成留下的候选），未读清零。聊天本身和设置保留。
+export const clearChatMessages = (chatId) =>
+  db.transaction('rw', db.chats, db.messages, async () => {
+    const id = Number(chatId);
+    await db.messages.where('chatId').equals(id).delete();
+    await db.chats.update(id, { lastMessage: null, unread: 0 });
+  });
+
+// 删除整个对话框：删掉这个聊天和它的所有消息。角色本身保留（角色只在角色库里删）。
+export const deleteChat = (chatId) =>
+  db.transaction('rw', db.chats, db.messages, async () => {
+    const id = Number(chatId);
+    await db.messages.where('chatId').equals(id).delete();
+    await db.chats.delete(id);
+  });

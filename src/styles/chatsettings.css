@@ -1,0 +1,92 @@
+/* src/styles/chatsettings.css */
+/* 聊天设置页（包 2c-1）。表单的基础样式在 forms.css，这里只放这一页多出来的部分。 */
+
+.cs-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.cs-actions .btn {
+  min-height: calc(var(--tap) * 1.17);
+  border-radius: 16px;
+  font-size: 1.1rem;
+}
+
+/* 头像预览一行 */
+.cs-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.cs-avatar-note {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* 文件选择框藏起来，用旁边的按钮触发（读屏只会看到按钮） */
+.cs-file {
+  display: none;
+}
+
+/* 多行输入框 */
+.cs-area {
+  min-height: 7rem;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.55;
+}
+
+/* 单选和开关：整行都是点按目标，文字在右边 */
+.cs-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.cs-fieldset legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.cs-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: calc(var(--tap) * 1.17);
+  box-sizing: border-box;
+  padding: 0.5rem 0.8rem;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+.cs-choice.is-on {
+  border-color: var(--text);
+  background: var(--surface2);
+}
+.cs-choice input {
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: 0;
+  accent-color: var(--text);
+}
+.cs-choice-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cs-choice-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+.cs-choice-hint {
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}

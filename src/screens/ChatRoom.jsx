@@ -15,7 +15,7 @@ import {
   resolveChat,
   setVariantIndex,
 } from '../services/messageService';
-import { navigate, soonPath, useRoute } from '../services/router';
+import { navigate, useRoute } from '../services/router';
 import { playSound } from '../services/soundService';
 import { formatClock } from '../services/timeFormat';
 import '../styles/chat.css';
@@ -24,7 +24,7 @@ import '../styles/chatroom.css';
 // 聊天室。
 //   包 2a：消息读写、“发送”只发气泡、引用、进入清零未读。
 //   包 2b：“让 TA 回复”调用 AI（整段返回，不做流式）、暂停、重新生成（保留旧回复，可来回看）、打字指示器、报错播报。
-//   包 2c：聊天设置页。
+//   包 2c-1：聊天设置页（/chat/settings）；在输入区里输入时，底部“返回聊天列表”和“聊天设置”在画面上收起，读屏仍然读得到。
 
 const NO_AI_TEXT = '还没填 AI 接入，所以现在没有回复。你发出的消息都已经保存好了。请先到设置里的“AI 接入”填好接口地址、密钥和模型。';
 
@@ -98,7 +98,11 @@ export default function ChatRoom() {
   const [config, setConfig] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [aiError, setAiError] = useState('');
+  // 输入区里有东西拿着焦点（输入框、发送、让 TA 回复、取消引用）：底部两个按钮在画面上收起
+  const [typing, setTyping] = useState(false);
 
+  const composerRef = useRef(null);
+  const typingTimerRef = useRef(null);
   const inputRef = useRef(null);
   const endRef = useRef(null);
   const primaryRef = useRef(null);
@@ -185,6 +189,30 @@ export default function ChatRoom() {
   }, [status, messages.length, generating, aiError]);
 
   const byId = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages]);
+
+  // 按当前焦点重新判断“是不是正在输入区里”
+  const syncTyping = () => {
+    const box = composerRef.current;
+    setTyping(Boolean(box) && box.contains(document.activeElement));
+  };
+
+  // 获得焦点：马上收起。失去焦点：等一小会儿再判断，
+  // 这样点“发送”时按钮不会因为底部按钮突然冒出来而被挤走、点偏。
+  const onComposerFocus = () => {
+    window.clearTimeout(typingTimerRef.current);
+    setTyping(true);
+  };
+  const onComposerBlur = () => {
+    window.clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = window.setTimeout(syncTyping, 250);
+  };
+
+  // 等待回复时输入框被禁用、焦点会丢，有的浏览器这时不发失焦事件，所以状态变化后补判断一次
+  useEffect(() => {
+    window.clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = window.setTimeout(syncTyping, 300);
+    return () => window.clearTimeout(typingTimerRef.current);
+  }, [generating, status]);
 
   const userName = chat?.userProfile?.name || '我';
   const roleName = (message) => (message.role === 'user' ? userName : character?.name || '');
@@ -570,7 +598,7 @@ export default function ChatRoom() {
 
   const composer =
     status === 'ready' ? (
-      <section className={`cr-composer${hugeClass}`} aria-label="输入消息">
+      <section ref={composerRef} className={`cr-composer${hugeClass}`} aria-label="输入消息" onFocus={onComposerFocus} onBlur={onComposerBlur}>
         {quoting && (
           <div className="cr-quote-chip">
             <span className="cr-qmark" aria-hidden="true">
@@ -633,12 +661,12 @@ export default function ChatRoom() {
   const actions = (
     <>
       {composer}
-      <nav className={`cr-nav${hugeClass}`} aria-label="页面操作">
+      <nav className={`cr-nav${hugeClass}${typing ? ' is-away' : ''}`} aria-label="页面操作">
         <button type="button" className="btn" onClick={() => go(backPath)}>
           返回聊天列表
         </button>
         {status === 'ready' && (
-          <button type="button" className="btn" onClick={() => go(soonPath('聊天设置', here))}>
+          <button type="button" className="btn" onClick={() => go(`/chat/settings?id=${chat.id}`)}>
             聊天设置
           </button>
         )}

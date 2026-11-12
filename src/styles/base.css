@@ -1,3 +1,4 @@
+/* src/styles/base.css */
 /* 基础样式：重置、字号、焦点环、按钮、读屏专用隐藏、减少动态效果 */
 
 *,
@@ -58,7 +59,7 @@ textarea {
 }
 
 ::placeholder {
-  color: var(--border);
+  color: var(--text2);
   opacity: 1;
 }
 

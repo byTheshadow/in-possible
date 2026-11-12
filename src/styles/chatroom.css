@@ -296,6 +296,20 @@
 .cr-nav.cr-huge .btn {
   flex: none;
 }
+/* 输入时（输入区里有焦点）：底部两个按钮在画面上消失，但读屏仍然读得到、点得到。
+   做法和 .sr-only 一样（不用 display:none，也不用 aria-hidden）。 */
+.cr-nav.is-away,
+.cr-nav.cr-huge.is-away {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .cr-composer.cr-huge .cr-btn-row {
   flex-direction: column;
 }

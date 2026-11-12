@@ -6,6 +6,7 @@ import AiSettings from './screens/AiSettings';
 import AppList from './screens/AppList';
 import ChatRoom from './screens/ChatRoom';
 import ChatList from './screens/ChatList';
+import ChatSettings from './screens/ChatSettings';
 import Diagnostics from './screens/Diagnostics';
 import Placeholder from './screens/Placeholder';
 import Settings from './screens/Settings';
@@ -15,11 +16,12 @@ import { getSetting } from './services/db';
 import { hasHash, navigate, useRoute } from './services/router';
 import './styles/layout.css';
 
-// 路由表。日历等页面做好后加到这里。聊天室的地址是 /chat?id=聊天id（或 /chat?c=角色id）。
+// 路由表。日历等页面做好后加到这里。聊天室的地址是 /chat?id=聊天id（或 /chat?c=角色id），聊天设置是 /chat/settings?id=聊天id。
 const ROUTES = {
   '/welcome': { Component: Welcome, label: '首次使用说明' },
   '/chats': { Component: ChatList, label: '聊天列表' },
   '/chat': { Component: ChatRoom, label: '聊天室' },
+  '/chat/settings': { Component: ChatSettings, label: '聊天设置' },
   '/apps': { Component: AppList, label: '应用列表' },
   '/settings': { Component: Settings, label: '设置' },
   '/settings/ai': { Component: AiSettings, label: 'AI 接入' },
