@@ -1,0 +1,28 @@
+/* src/styles/characters.css */
+/* 角色库和角色编辑页（包 2d）。表单基础样式在 forms.css，聊天设置页共用的在 chatsettings.css，列表行用 chat.css 的 .chat-card。 */
+
+/* 文件选择框藏起来，用旁边的按钮触发（读屏只会看到按钮） */
+.cl-file {
+  display: none;
+}
+
+/* 导入预览里的一行：名字一行，说明另起一行，说明允许换行 */
+.cl-plan-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: var(--surface2);
+  color: var(--text);
+}
+.cl-plan-name {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+.cl-plan-note {
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}

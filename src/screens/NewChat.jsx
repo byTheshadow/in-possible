@@ -76,7 +76,10 @@ export default function NewChat() {
     body = (
       <div className="card stack">
         <h2>还没有角色</h2>
-        <p>没有角色就没法新建对话。创建角色的功能还在建设中。</p>
+        <p>没有角色就没法新建对话。请先到角色库新建一个角色，或者导入本站导出的角色文件。</p>
+        <button type="button" className="btn btn-primary btn-block" onClick={() => navigate('/characters')}>
+          去角色库
+        </button>
       </div>
     );
   } else {

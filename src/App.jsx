@@ -4,6 +4,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 import AccessibilitySettings from './screens/AccessibilitySettings';
 import AiSettings from './screens/AiSettings';
 import AppList from './screens/AppList';
+import CharacterEdit from './screens/CharacterEdit';
+import Characters from './screens/Characters';
 import ChatRoom from './screens/ChatRoom';
 import ChatList from './screens/ChatList';
 import NewChat from './screens/NewChat';
@@ -17,11 +19,13 @@ import { getSetting } from './services/db';
 import { hasHash, navigate, useRoute } from './services/router';
 import './styles/layout.css';
 
-// 路由表。日历等页面做好后加到这里。聊天室的地址是 /chat?id=聊天id（或 /chat?c=角色id），聊天设置是 /chat/settings?id=聊天id。
+// 路由表。日历等页面做好后加到这里。角色库是 /characters，编辑和新建是 /characters/edit（?id=角色id，不带 id 是新建）。聊天室的地址是 /chat?id=聊天id（或 /chat?c=角色id），聊天设置是 /chat/settings?id=聊天id。
 const ROUTES = {
   '/welcome': { Component: Welcome, label: '首次使用说明' },
   '/chats': { Component: ChatList, label: '聊天列表' },
   '/chats/new': { Component: NewChat, label: '新建对话' },
+  '/characters': { Component: Characters, label: '角色库' },
+  '/characters/edit': { Component: CharacterEdit, label: '编辑角色' },
   '/chat': { Component: ChatRoom, label: '聊天室' },
   '/chat/settings': { Component: ChatSettings, label: '聊天设置' },
   '/apps': { Component: AppList, label: '应用列表' },

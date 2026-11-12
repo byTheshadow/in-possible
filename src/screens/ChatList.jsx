@@ -4,7 +4,7 @@ import Avatar, { avatarIndex } from '../components/Avatar';
 import Screen from '../components/Screen';
 import { announce } from '../services/announcer';
 import { listChatSummaries } from '../services/chatService';
-import { navigate, soonPath } from '../services/router';
+import { navigate } from '../services/router';
 import { playSound } from '../services/soundService';
 import { formatListTime } from '../services/timeFormat';
 import '../styles/chat.css';
@@ -49,8 +49,8 @@ export default function ChatList() {
       <button type="button" className="btn btn-primary btn-block" onClick={() => go('/chats/new')}>
         + 新建对话
       </button>
-      <button type="button" className="btn btn-block" onClick={() => go(soonPath('新建角色', '/chats'))}>
-        新建角色
+      <button type="button" className="btn btn-block" onClick={() => go('/characters')}>
+        角色库
       </button>
       <button type="button" className="btn btn-block" onClick={() => go('/apps')}>
         全部应用
@@ -76,7 +76,10 @@ export default function ChatList() {
     body = (
       <div className="card stack">
         <h2>还没有角色</h2>
-        <p>没有角色就没法聊天。创建角色的功能还在建设中。</p>
+        <p>没有角色就没法聊天。请先到角色库新建一个角色，或者导入本站导出的角色文件。</p>
+        <button type="button" className="btn btn-primary btn-block" onClick={() => go('/characters')}>
+          去角色库
+        </button>
         {/* 开发用入口，正式发布前删掉 */}
         <button type="button" className="btn btn-block" onClick={() => go('/settings/diagnostics')}>
           去诊断页造示例角色（开发用）
