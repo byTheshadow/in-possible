@@ -9,9 +9,9 @@ import { playSound } from '../services/soundService';
 import { formatListTime } from '../services/timeFormat';
 import '../styles/chat.css';
 
-// 点角色进入的地址。聊天室做好之后，把这一行改成：
-//   const chatPath = (character) => `/chat?c=${character.id}`;
-const chatPath = (character) => soonPath(`和${character.name}聊天`, '/chats');
+// 点一行进入的聊天室地址：已经有聊天记录就按聊天 id 进；还没有就按角色 id 进，
+// 聊天室会用这个角色的第一个聊天，没有就新建一个。
+const chatPath = ({ chat, character }) => (chat?.id ? `/chat?id=${chat.id}` : `/chat?c=${character.id}`);
 
 const previewText = (lastMessage) => {
   if (!lastMessage) return '还没有消息';
@@ -84,10 +84,10 @@ export default function ChatList() {
     body = (
       <nav aria-label="角色列表">
         <ul className="list" role="list">
-          {rows.map(({ character, unread, lastMessage, sortAt }) => (
+          {rows.map(({ character, chat, unread, lastMessage, sortAt }) => (
             <li key={character.id}>
               <a
-                href={`#${chatPath(character)}`}
+                href={`#${chatPath({ chat, character })}`}
                 className={`chat-card chat-card-k${avatarIndex(character) + 1}${unread > 0 ? ' is-unread' : ''}`}
                 onClick={() => playSound('tap')}
               >

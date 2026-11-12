@@ -1,0 +1,300 @@
+/* src/styles/chatroom.css */
+/* 聊天室：消息流、气泡、引用、输入区。风格按第三稿：平整色块，不用玻璃拟态。 */
+
+:root,
+[data-theme='light'] {
+  /* “引用”按钮：紫底；字色和边框同一个深紫，对比度远高于 7:1 */
+  --cr-quote-bg: #e6defa;
+  --cr-on-quote: #2d1b69;
+  /* 气泡里嵌入的引用块：比气泡底色深一点点 */
+  --cr-inset-char: rgba(29, 22, 24, 0.1);
+  --cr-inset-user: rgba(255, 255, 255, 0.16);
+}
+
+[data-theme='dark'] {
+  --cr-quote-bg: #3b2c6b;
+  --cr-on-quote: #e6defa;
+  --cr-inset-char: rgba(29, 22, 24, 0.1);
+  --cr-inset-user: rgba(0, 0, 0, 0.1);
+}
+
+/* 头像：聊天室里用的小号 */
+.avatar-xs {
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 0.8rem;
+}
+
+/* 消息流：内容少时靠下，多时整页滚动 */
+.cr-flow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cr-day {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 0.7rem;
+  padding: 0.1rem 0.8rem;
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.cr-msg {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.cr-msg-user {
+  justify-content: flex-end;
+  margin-left: 2rem;
+}
+.cr-msg-user .cr-col {
+  flex: 0 1 auto;
+  align-items: flex-end;
+}
+
+.cr-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.cr-meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text2);
+}
+
+/* 气泡：长消息自动换行，长网址也会折行；保留消息里的换行 */
+.cr-bubble {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.8rem;
+  border-radius: 16px 16px 16px 4px;
+  color: var(--kon);
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+.cr-bubble-k1 { background: var(--k1); }
+.cr-bubble-k2 { background: var(--k2); }
+.cr-bubble-k3 { background: var(--k3); }
+.cr-bubble-k4 { background: var(--k4); }
+
+/* 我的气泡：反色，和四个分类色都分得开；位置靠右，并有“我”字 */
+.cr-msg-user .cr-bubble {
+  background: var(--text);
+  color: var(--bg);
+  border-radius: 16px 16px 4px 16px;
+}
+
+/* 气泡里嵌入的被引用消息 */
+.cr-quote-in {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  margin-bottom: 0.45rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  background: var(--cr-inset-char);
+  font-size: 0.88rem;
+}
+.cr-msg-user .cr-quote-in {
+  background: var(--cr-inset-user);
+}
+.cr-quote-in-body {
+  min-width: 0;
+}
+.cr-quote-in-who {
+  margin: 0;
+  font-weight: 800;
+}
+.cr-quote-in-text {
+  margin: 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 杂志式大引号：只是装饰，含义靠旁边的文字“引用” */
+.cr-qmark {
+  display: inline-block;
+  width: 0.6em;
+  height: 0.7em;
+  flex: none;
+  font-family: Georgia, 'Noto Serif', serif;
+  font-weight: 900;
+  font-size: 2.2em;
+  line-height: 1;
+  transform: translateY(0.12em);
+  overflow: visible;
+}
+.cr-quote-in .cr-qmark {
+  font-size: 1.9em;
+}
+
+/* 每条消息下面的操作按钮 */
+.cr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.cr-msg-user .cr-actions {
+  justify-content: flex-end;
+}
+.cr-btn-quote {
+  background: var(--cr-quote-bg);
+  color: var(--cr-on-quote);
+  border: 2px solid var(--cr-on-quote);
+  border-radius: 16px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  padding: 0 0.8rem;
+}
+
+/* 还没接入 AI 的提示：文字写明“提示”，不只靠颜色 */
+.cr-hint {
+  padding: 0.7rem 0.9rem;
+  border-radius: 16px;
+  background: var(--warn-c);
+  color: var(--on-warn-c);
+}
+.cr-hint p + p {
+  font-weight: 500;
+}
+.cr-hint-title {
+  font-weight: 800;
+}
+
+/* 输入区 */
+.cr-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.7rem;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.cr-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: calc(var(--tap) * 1.17);
+  padding: 0.5rem 0.7rem;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  resize: none;
+}
+.cr-quote-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.7rem;
+  border-radius: 12px;
+  background: var(--surface2);
+}
+.cr-quote-chip-body {
+  flex: 1;
+  min-width: 0;
+}
+.cr-quote-chip-who {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+.cr-quote-chip-text {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cr-quote-chip .btn {
+  flex: none;
+  padding: 0 0.6rem;
+  font-size: 0.85rem;
+  background: var(--surface);
+  border: 2px solid var(--text);
+  border-radius: 16px;
+}
+
+/* 两个按钮：放不下就自动上下排 */
+.cr-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.cr-btn-row .btn {
+  flex: 1 1 7rem;
+  min-height: calc(var(--tap) * 1.17);
+  border-radius: 16px;
+  font-size: 1.1rem;
+}
+.cr-send {
+  border-color: var(--text);
+}
+
+/* 底部：返回和聊天设置 */
+.cr-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.cr-nav .btn {
+  flex: 1 1 7rem;
+  min-height: calc(var(--tap) * 1.17);
+  border-radius: 16px;
+  font-size: 1.05rem;
+}
+
+/* 字号 200%：消息下面的按钮和底部两个按钮改成横向滑动，输入区两个按钮上下排 */
+.cr-huge .cr-actions,
+.cr-nav.cr-huge {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 0.3rem;
+}
+.cr-huge .cr-actions {
+  width: 100%;
+  box-sizing: border-box;
+}
+.cr-huge .cr-actions .btn,
+.cr-nav.cr-huge .btn {
+  flex: none;
+}
+.cr-composer.cr-huge .cr-btn-row {
+  flex-direction: column;
+}
+.cr-composer.cr-huge .cr-btn-row .btn {
+  flex: none;
+  min-height: calc(var(--tap) * 1.17);
+}

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import AccessibilitySettings from './screens/AccessibilitySettings';
 import AppList from './screens/AppList';
+import ChatRoom from './screens/ChatRoom';
 import ChatList from './screens/ChatList';
 import Diagnostics from './screens/Diagnostics';
 import Placeholder from './screens/Placeholder';
@@ -13,10 +14,11 @@ import { getSetting } from './services/db';
 import { hasHash, navigate, useRoute } from './services/router';
 import './styles/layout.css';
 
-// 路由表。聊天列表、聊天室、日历做好后加到这里，并把聊天列表设为默认入口。
+// 路由表。日历等页面做好后加到这里。聊天室的地址是 /chat?id=聊天id（或 /chat?c=角色id）。
 const ROUTES = {
   '/welcome': { Component: Welcome, label: '首次使用说明' },
   '/chats': { Component: ChatList, label: '聊天列表' },
+  '/chat': { Component: ChatRoom, label: '聊天室' },
   '/apps': { Component: AppList, label: '应用列表' },
   '/settings': { Component: Settings, label: '设置' },
   '/settings/accessibility': { Component: AccessibilitySettings, label: '无障碍设置' },

@@ -5,7 +5,7 @@ import { playSound } from '../services/soundService';
 
 // 设置：分组列表。目前只有“无障碍”是真的，其余指向“还在建设中”。
 const ITEMS = [
-  { title: '角色', desc: '名字、头像、人设', to: soonPath('角色', '/settings') },
+  
   { title: 'AI 接入', desc: '接口地址、密钥、模型', to: soonPath('AI 接入', '/settings') },
   { title: '视觉识别', desc: '看图用的接口', to: soonPath('视觉识别', '/settings') },
   { title: '通知与陪伴', desc: '通知开关、提示音、主动消息频率', to: soonPath('通知与陪伴', '/settings') },
