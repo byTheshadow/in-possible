@@ -9,6 +9,9 @@
   /* 气泡里嵌入的引用块：比气泡底色深一点点 */
   --cr-inset-char: rgba(29, 22, 24, 0.1);
   --cr-inset-user: rgba(255, 255, 255, 0.16);
+  /* “重新生成”按钮：玫红底，字色和边框同一个深红 */
+  --cr-reroll-bg: #ffd9e6;
+  --cr-on-reroll: #5e0a29;
 }
 
 [data-theme='dark'] {
@@ -16,6 +19,8 @@
   --cr-on-quote: #e6defa;
   --cr-inset-char: rgba(29, 22, 24, 0.1);
   --cr-inset-user: rgba(0, 0, 0, 0.1);
+  --cr-reroll-bg: #5e1b38;
+  --cr-on-reroll: #ffd9e6;
 }
 
 /* 头像：聊天室里用的小号 */
@@ -297,4 +302,134 @@
 .cr-composer.cr-huge .cr-btn-row .btn {
   flex: none;
   min-height: calc(var(--tap) * 1.17);
+}
+
+/* ---------- 包 2b ---------- */
+
+.cr-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: none;
+}
+
+/* “重新生成”：和“引用”不同色，也不同形状标记，并且有文字 */
+.cr-btn-reroll {
+  background: var(--cr-reroll-bg);
+  color: var(--cr-on-reroll);
+  border: 2px solid var(--cr-on-reroll);
+  border-radius: 16px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  padding: 0 0.8rem;
+}
+
+/* 重新生成后的“第 n 条，共 m 条”和上一条、下一条 */
+.cr-variant {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+.cr-variant-label {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+.cr-btn-small {
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  background: var(--surface2);
+  color: var(--text);
+  border: 2px solid var(--text);
+}
+/* 到头了的按钮：仍然能被聚焦（不丢焦点），样式变成虚线 */
+.cr-btn-small.is-end {
+  background: var(--bg);
+  color: var(--text2);
+  border: 2px dashed var(--text2);
+}
+
+/* 等待回复时：不能点的按钮和输入框，用虚线边框，不只靠变灰 */
+.cr-composer .btn:disabled,
+.cr-actions .btn:disabled,
+.cr-variant .btn:disabled,
+.cr-quote-chip .btn:disabled {
+  background: var(--bg);
+  color: var(--text2);
+  border: 2px dashed var(--text2);
+  cursor: default;
+  opacity: 1;
+}
+.cr-input:disabled {
+  background: var(--surface2);
+  color: var(--text2);
+  border: 2px dashed var(--text2);
+}
+.cr-wait {
+  margin: 0;
+  font-weight: 800;
+}
+
+/* 暂停：白底粗黑边，和“让 TA 回复”的玫红实心明显不同 */
+.cr-pause {
+  background: var(--surface);
+  color: var(--text);
+  border: 3px solid var(--text);
+}
+
+/* 出错提示和“去填写”按钮 */
+.cr-hint-btn {
+  margin-top: 0.6rem;
+  min-height: calc(var(--tap) * 1.17);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--on-warn-c);
+}
+
+/* 打字指示器 */
+.cr-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.6rem;
+}
+.cr-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--kon);
+  animation: cr-dot 1.2s ease-in-out infinite;
+}
+.cr-bar {
+  width: 0.28rem;
+  height: 1.1rem;
+  border-radius: 3px;
+  background: var(--kon);
+  animation: cr-wave 1s ease-in-out infinite;
+}
+.cr-typing-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+@keyframes cr-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-0.35rem);
+  }
+}
+@keyframes cr-wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }

@@ -3,10 +3,9 @@ import Screen from '../components/Screen';
 import { soonPath } from '../services/router';
 import { playSound } from '../services/soundService';
 
-// 设置：分组列表。目前只有“无障碍”是真的，其余指向“还在建设中”。
+// 设置：分组列表。目前“AI 接入”和“无障碍”是真的，其余指向“还在建设中”。
 const ITEMS = [
-  
-  { title: 'AI 接入', desc: '接口地址、密钥、模型', to: soonPath('AI 接入', '/settings') },
+  { title: 'AI 接入', desc: '接口地址、密钥、模型', to: '/settings/ai' },
   { title: '视觉识别', desc: '看图用的接口', to: soonPath('视觉识别', '/settings') },
   { title: '通知与陪伴', desc: '通知开关、提示音、主动消息频率', to: soonPath('通知与陪伴', '/settings') },
   { title: '无障碍', desc: '配色、字号、大按钮、单手模式', to: '/settings/accessibility' },

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import AccessibilitySettings from './screens/AccessibilitySettings';
+import AiSettings from './screens/AiSettings';
 import AppList from './screens/AppList';
 import ChatRoom from './screens/ChatRoom';
 import ChatList from './screens/ChatList';
@@ -21,6 +22,7 @@ const ROUTES = {
   '/chat': { Component: ChatRoom, label: '聊天室' },
   '/apps': { Component: AppList, label: '应用列表' },
   '/settings': { Component: Settings, label: '设置' },
+  '/settings/ai': { Component: AiSettings, label: 'AI 接入' },
   '/settings/accessibility': { Component: AccessibilitySettings, label: '无障碍设置' },
   '/settings/diagnostics': { Component: Diagnostics, label: '诊断页' },
   '/soon': { Component: Placeholder, label: '建设中' },

@@ -3,20 +3,30 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Avatar, { avatarIndex } from '../components/Avatar';
 import Screen from '../components/Screen';
 import { getAccessibilitySettings, subscribeAccessibility } from '../services/accessibilityService';
+import { AiError, buildChatMessages, DEFAULT_API_CONFIG, getApiConfig, isApiConfigured, requestReply } from '../services/aiService';
 import { announce } from '../services/announcer';
 import { getCharacter } from '../services/chatService';
-import { addUserMessage, listMessages, markChatRead, resolveChat } from '../services/messageService';
+import {
+  addCharacterMessage,
+  addUserMessage,
+  addVariant,
+  listMessages,
+  markChatRead,
+  resolveChat,
+  setVariantIndex,
+} from '../services/messageService';
 import { navigate, soonPath, useRoute } from '../services/router';
 import { playSound } from '../services/soundService';
 import { formatClock } from '../services/timeFormat';
 import '../styles/chat.css';
 import '../styles/chatroom.css';
 
-// 聊天室（包 2a）：消息读写、发送只发气泡、引用、进入清零未读、如实提示还没接入 AI。
-// 还没做的（后面的包）：触发 AI 生成、暂停、重新生成、打字指示器（2b）；聊天设置页（2c）。
+// 聊天室。
+//   包 2a：消息读写、“发送”只发气泡、引用、进入清零未读。
+//   包 2b：“让 TA 回复”调用 AI（整段返回，不做流式）、暂停、重新生成（保留旧回复，可来回看）、打字指示器、报错播报。
+//   包 2c：聊天设置页。
 
-const AI_CONNECTED = false;
-const NO_AI_TEXT = '还没接入 AI，所以现在没有回复。你发出的消息都已经保存好了。';
+const NO_AI_TEXT = '还没填 AI 接入，所以现在没有回复。你发出的消息都已经保存好了。请先到设置里的“AI 接入”填好接口地址、密钥和模型。';
 
 const MARK = '“';
 
@@ -37,6 +47,42 @@ const useFontScale = () => {
   return scale;
 };
 
+function RerollIcon() {
+  return (
+    <svg aria-hidden="true" className="cr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 11a8 8 0 0 0-14.3-4.6M4 4v4h4" />
+      <path d="M4 13a8 8 0 0 0 14.3 4.6M20 20v-4h-4" />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg aria-hidden="true" className="cr-icon" viewBox="0 0 24 24" fill="currentColor">
+      <rect x="5" y="4" width="5" height="16" rx="1.5" />
+      <rect x="14" y="4" width="5" height="16" rx="1.5" />
+    </svg>
+  );
+}
+
+// 打字指示器：三点跳动、文字、波浪。动画只是装饰，文字“正在输入”一直都在（读屏也读得到）。
+function TypingIndicator({ style, name }) {
+  let inner;
+  if (style === 'wave') {
+    inner = [0, 1, 2, 3, 4].map((i) => <span key={i} className="cr-bar" style={{ animationDelay: `${i * 0.12}s` }} />);
+  } else if (style === 'text') {
+    inner = <span className="cr-typing-label">正在输入……</span>;
+  } else {
+    inner = [0, 1, 2].map((i) => <span key={i} className="cr-dot" style={{ animationDelay: `${i * 0.15}s` }} />);
+  }
+  return (
+    <span className="cr-typing">
+      {inner}
+      <span className="sr-only">{name}正在输入</span>
+    </span>
+  );
+}
+
 export default function ChatRoom() {
   const { query } = useRoute();
   const idParam = query.get('id');
@@ -49,15 +95,52 @@ export default function ChatRoom() {
   const [text, setText] = useState('');
   const [quoting, setQuoting] = useState(null);
   const [sending, setSending] = useState(false);
+  const [config, setConfig] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   const inputRef = useRef(null);
   const endRef = useRef(null);
+  const primaryRef = useRef(null);
+  const abortRef = useRef(null);
   const huge = useFontScale() >= 2;
   const hugeClass = huge ? ' cr-huge' : '';
+  const configured = isApiConfigured(config);
+
+  // AI 接入设置。从设置页回来时这个页面会重新挂载，所以这里总是读到最新的。
+  useEffect(() => {
+    let alive = true;
+    getApiConfig()
+      .then((result) => {
+        if (alive) setConfig(result);
+      })
+      .catch((error) => {
+        if (!alive) return;
+        setConfig({ ...DEFAULT_API_CONFIG });
+        announce(`读取 AI 接入设置失败：${error?.message || '未知错误'}`, { assertive: true });
+        playSound('error');
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // 换聊天或离开页面时，正在等的回复直接放弃，不留半条
+  useEffect(
+    () => () => {
+      if (abortRef.current) {
+        abortRef.current.leaving = true;
+        abortRef.current.abort();
+      }
+    },
+    [idParam, characterParam]
+  );
 
   useEffect(() => {
     let alive = true;
     setStatus('loading');
+    setGenerating(false);
+    setAiError('');
     (async () => {
       try {
         const found = await resolveChat({ chatId: idParam, characterId: characterParam });
@@ -96,16 +179,17 @@ export default function ChatRoom() {
     };
   }, [idParam, characterParam]);
 
-  // 有新消息时滚到最底下（焦点不动，读屏用户不会被带走）
+  // 有新消息或状态变化时滚到最底下（焦点不动，读屏用户不会被带走）
   useEffect(() => {
     if (status === 'ready' && endRef.current) endRef.current.scrollIntoView({ block: 'end' });
-  }, [status, messages.length]);
+  }, [status, messages.length, generating, aiError]);
 
   const byId = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages]);
 
   const userName = chat?.userProfile?.name || '我';
   const roleName = (message) => (message.role === 'user' ? userName : character?.name || '');
   const inputHint = chat?.userProfile?.inputHint || '说点什么……';
+  const typingStyle = chat?.typingStyle || 'dots';
 
   const focusInput = () => {
     if (inputRef.current) inputRef.current.focus();
@@ -127,42 +211,166 @@ export default function ChatRoom() {
     focusInput();
   };
 
-  const send = async () => {
+  // 存一条用户消息，成功返回存好的消息，失败返回 null
+  const sendCore = async () => {
     const body = text.trim();
     if (!body) {
       announce('还没有写内容，不能发送', { assertive: true });
       playSound('error');
       focusInput();
-      return;
+      return null;
     }
-    if (sending || !chat) return;
+    if (sending || !chat) return null;
     setSending(true);
     try {
       const saved = await addUserMessage({ chatId: chat.id, text: body, quoteOfId: quoting ? quoting.id : null });
       setMessages((previous) => [...previous, saved]);
       setText('');
       setQuoting(null);
-      playSound('success');
-      announce('已发送');
-      focusInput();
+      setAiError('');
+      return saved;
     } catch (error) {
       announce(`保存失败，消息还留在输入框里：${error?.message || '未知错误'}`, { assertive: true });
       playSound('error');
+      return null;
     } finally {
       setSending(false);
     }
   };
 
-  // 包 2a 没有 AI：如实说明，不假装角色回复。2b 会把这里换成真的生成。
-  const askAi = () => {
+  const send = async () => {
+    if (generating) return;
+    const saved = await sendCore();
+    if (saved) {
+      playSound('success');
+      announce('已发送');
+      focusInput();
+    }
+  };
+
+  // 把 history 交给 AI 并等整段回复。reroll 有值时是重新生成那一条。
+  const generate = async ({ history, reroll = null, focusPrimary = false }) => {
+    const controller = new AbortController();
+    controller.leaving = false;
+    abortRef.current = controller;
+    setAiError('');
+    setGenerating(true);
+    playSound('tap');
+    announce(`${character.name}正在输入`);
+    if (focusPrimary) window.setTimeout(() => primaryRef.current && primaryRef.current.focus(), 0);
+
+    try {
+      const payload = buildChatMessages({
+        character,
+        chat,
+        history,
+        allMessages: messages,
+        userName: chat.userProfile.name || '用户',
+      });
+      const reply = await requestReply({ config, messages: payload, signal: controller.signal });
+      if (controller.signal.aborted) throw new AiError('已暂停', 'aborted');
+
+      if (reroll) {
+        const updated = await addVariant({ chatId: chat.id, messageId: reroll.id, text: reply });
+        setMessages((previous) => previous.map((m) => (m.id === updated.id ? updated : m)));
+        if (!controller.leaving) announce(`已重新生成，现在是第 ${updated.variants.length} 条，共 ${updated.variants.length} 条。${character.name}说：${reply}`);
+      } else {
+        const savedReply = await addCharacterMessage({ chatId: chat.id, text: reply });
+        setMessages((previous) => [...previous, savedReply]);
+        if (!controller.leaving) announce(`${character.name}回复：${reply}`);
+      }
+      if (!controller.leaving) playSound('receive');
+    } catch (error) {
+      if (controller.leaving) return;
+      if (error?.kind === 'aborted') {
+        playSound('tap');
+        announce('已暂停，没有留下半条回复');
+      } else {
+        const reason = error?.message || '未知错误';
+        setAiError(reason);
+        playSound('error');
+        announce(`${character.name}没能回复：${reason}`, { assertive: true });
+      }
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
+      if (!controller.leaving) setGenerating(false);
+    }
+  };
+
+  const announceNoAi = () => {
     playSound('tap');
     announce(NO_AI_TEXT, { assertive: true });
+  };
+
+  const askAi = async () => {
+    if (generating || !chat || !character) return;
+    if (!configured) {
+      announceNoAi();
+      return;
+    }
+    // 输入框里还有没发送的字：先发出去，再让 TA 回复
+    let history = messages;
+    if (text.trim()) {
+      const savedNow = await sendCore();
+      if (!savedNow) return;
+      history = [...messages, savedNow];
+    }
+    if (history.length === 0) {
+      announce('还没有消息。先写一句，再让 TA 回复', { assertive: true });
+      playSound('error');
+      focusInput();
+      return;
+    }
+    if (history[history.length - 1].role !== 'user') {
+      announce(`${character.name}刚刚已经回复过了。想再来一次，请点“重新生成”；也可以先发一条新消息。`, { assertive: true });
+      playSound('error');
+      return;
+    }
+    await generate({ history });
+  };
+
+  const pause = () => {
+    if (abortRef.current) abortRef.current.abort();
+  };
+
+  const rerollMessage = async (message) => {
+    if (generating || !chat || !character) return;
+    if (!configured) {
+      announceNoAi();
+      return;
+    }
+    const index = messages.findIndex((m) => m.id === message.id);
+    if (index < 0) return;
+    await generate({ history: messages.slice(0, index), reroll: message, focusPrimary: true });
+  };
+
+  const switchVariant = async (message, delta) => {
+    const next = message.variantIndex + delta;
+    if (next < 0) {
+      announce('已经是第一条了');
+      return;
+    }
+    if (next >= message.variants.length) {
+      announce('已经是最后一条了');
+      return;
+    }
+    try {
+      const updated = await setVariantIndex({ chatId: chat.id, messageId: message.id, index: next });
+      setMessages((previous) => previous.map((m) => (m.id === updated.id ? updated : m)));
+      playSound('tap');
+      announce(`第 ${next + 1} 条，共 ${updated.variants.length} 条：${updated.text}`);
+    } catch (error) {
+      announce(`切换失败：${error?.message || '未知错误'}`, { assertive: true });
+      playSound('error');
+    }
   };
 
   const go = (path) => {
     playSound('tap');
     navigate(path);
   };
+
+  const here = chat ? `/chat?id=${chat.id}` : '/chats';
 
   const renderMessage = (message, index) => {
     const isUser = message.role === 'user';
@@ -171,6 +379,7 @@ export default function ChatRoom() {
     const previous = messages[index - 1];
     const showDay = !previous || dayKey(previous.timestamp) !== dayKey(message.timestamp);
     const colorClass = `cr-bubble-k${avatarIndex(character) + 1}`;
+    const isLatest = index === messages.length - 1;
 
     if (message.role === 'system') {
       return (
@@ -199,13 +408,65 @@ export default function ChatRoom() {
       ) : null;
 
     const quoteButton = (
-      <button type="button" className="btn cr-btn-quote" aria-label={`引用${who} ${time} 的消息`} onClick={() => quoteMessage(message)}>
+      <button
+        type="button"
+        className="btn cr-btn-quote"
+        disabled={generating}
+        aria-label={`引用${who} ${time} 的消息${generating ? '，等待回复时不能用' : ''}`}
+        onClick={() => quoteMessage(message)}
+      >
         <span className="cr-qmark" aria-hidden="true">
           {MARK}
         </span>
         引用
       </button>
     );
+
+    // 只有最新的一条角色回复能重新生成、来回切换
+    const canReroll = !isUser && isLatest;
+    const rerollButton = canReroll ? (
+      <button
+        type="button"
+        className="btn cr-btn-reroll"
+        disabled={generating}
+        aria-label={`重新生成${who}这条回复${generating ? '，等待回复时不能用' : ''}`}
+        onClick={() => rerollMessage(message)}
+      >
+        <RerollIcon />
+        重新生成
+      </button>
+    ) : null;
+
+    const variantRow =
+      canReroll && message.variants.length > 1 ? (
+        <div className="cr-variant">
+          <p className="cr-variant-label">
+            第 {message.variantIndex + 1} 条，共 {message.variants.length} 条
+          </p>
+          <div className="cr-actions">
+            <button
+              type="button"
+              className={`btn cr-btn-small${message.variantIndex === 0 ? ' is-end' : ''}`}
+              disabled={generating}
+              aria-disabled={message.variantIndex === 0 ? 'true' : undefined}
+              aria-label="看上一条回复"
+              onClick={() => switchVariant(message, -1)}
+            >
+              上一条
+            </button>
+            <button
+              type="button"
+              className={`btn cr-btn-small${message.variantIndex === message.variants.length - 1 ? ' is-end' : ''}`}
+              disabled={generating}
+              aria-disabled={message.variantIndex === message.variants.length - 1 ? 'true' : undefined}
+              aria-label="看下一条回复"
+              onClick={() => switchVariant(message, 1)}
+            >
+              下一条
+            </button>
+          </div>
+        </div>
+      ) : null;
 
     return (
       <li key={message.id}>
@@ -221,7 +482,11 @@ export default function ChatRoom() {
               {quoteBlock}
               {message.text}
             </div>
-            <div className="cr-actions">{quoteButton}</div>
+            <div className="cr-actions">
+              {quoteButton}
+              {rerollButton}
+            </div>
+            {variantRow}
           </div>
         </article>
       </li>
@@ -250,6 +515,7 @@ export default function ChatRoom() {
       </div>
     );
   } else {
+    const colorClass = `cr-bubble-k${avatarIndex(character) + 1}`;
     body = (
       <ul className={`cr-flow${hugeClass}`} role="list" aria-label="消息">
         {messages.length === 0 && (
@@ -258,11 +524,42 @@ export default function ChatRoom() {
           </li>
         )}
         {messages.map(renderMessage)}
-        {!AI_CONNECTED && (
+
+        {generating && (
+          <li>
+            <article className="cr-msg cr-msg-character">
+              {!huge && <Avatar character={character} size="md" />}
+              <div className="cr-col">
+                <p className="cr-meta">
+                  {huge && <Avatar character={character} size="xs" />}
+                  {character.name}
+                </p>
+                <div className={`cr-bubble ${colorClass}`}>
+                  <TypingIndicator style={typingStyle} name={character.name} />
+                </div>
+              </div>
+            </article>
+          </li>
+        )}
+
+        {aiError && (
+          <li>
+            <div className="cr-hint cr-error">
+              <p className="cr-hint-title">出错了</p>
+              <p>{aiError}</p>
+              <p>消息都还在。可以再点“让 TA 回复”重试。</p>
+            </div>
+          </li>
+        )}
+
+        {config !== null && !configured && (
           <li>
             <div className="cr-hint">
               <p className="cr-hint-title">提示</p>
               <p>{NO_AI_TEXT}</p>
+              <button type="button" className="btn btn-block cr-hint-btn" onClick={() => go(`/settings/ai?from=${encodeURIComponent(here)}`)}>
+                去填写 AI 接入
+              </button>
             </div>
           </li>
         )}
@@ -285,13 +582,13 @@ export default function ChatRoom() {
               </p>
               <p className="cr-quote-chip-text">{quoting.text}</p>
             </div>
-            <button type="button" className="btn" onClick={cancelQuote}>
+            <button type="button" className="btn" disabled={generating} onClick={cancelQuote}>
               取消引用
             </button>
           </div>
         )}
         <label htmlFor="cr-input" className="sr-only">
-          给{character?.name}发消息
+          {generating ? `给${character?.name}发消息（等待回复时不能输入）` : `给${character?.name}发消息`}
         </label>
         <textarea
           id="cr-input"
@@ -299,22 +596,39 @@ export default function ChatRoom() {
           className="cr-input"
           rows={2}
           value={text}
+          disabled={generating}
           placeholder={inputHint}
           onChange={(event) => setText(event.target.value)}
         />
+        {generating && (
+          <p className="cr-wait">
+            {character?.name}正在输入……点“暂停”可以中断。等待期间不能发送，也不能追加新消息。
+          </p>
+        )}
         <div className="cr-btn-row">
-          <button type="button" className="btn cr-send" onClick={send} disabled={sending}>
+          <button type="button" className="btn cr-send" onClick={send} disabled={generating || sending}>
             发送
           </button>
-          <button type="button" className="btn btn-primary" onClick={askAi}>
-            让 TA 回复
+          <button
+            type="button"
+            ref={primaryRef}
+            className={generating ? 'btn cr-pause' : 'btn btn-primary'}
+            onClick={generating ? pause : askAi}
+          >
+            {generating ? (
+              <>
+                <PauseIcon />
+                暂停
+              </>
+            ) : (
+              '让 TA 回复'
+            )}
           </button>
         </div>
       </section>
     ) : null;
 
   const backPath = '/chats';
-  const here = chat ? `/chat?id=${chat.id}` : backPath;
 
   const actions = (
     <>
@@ -332,11 +646,15 @@ export default function ChatRoom() {
     </>
   );
 
+  let subtitle = 'AI 还没接入';
+  if (config === null) subtitle = undefined;
+  else if (configured) subtitle = `AI：${config.model}`;
+
   return (
     <Screen
       title={character ? character.name : '聊天'}
       docTitle={character ? `和${character.name}聊天` : '聊天'}
-      subtitle={AI_CONNECTED ? undefined : 'AI 还没接入'}
+      subtitle={subtitle}
       leading={character ? <Avatar character={character} size="lg" /> : null}
       actions={actions}
     >

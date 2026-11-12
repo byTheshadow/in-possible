@@ -1,0 +1,36 @@
+/* src/styles/forms.css */
+/* 设置页里的表单：一个字段一块，标签在上，输入框够大。 */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.field label {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.field-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: calc(var(--tap) * 1.17);
+  padding: 0.5rem 0.8rem;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1.05rem;
+}
+.field-note {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  background: var(--surface2);
+  color: var(--text);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
