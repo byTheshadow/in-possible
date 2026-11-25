@@ -17,6 +17,7 @@ import Welcome from './screens/Welcome';
 import { announce } from './services/announcer';
 import { getSetting } from './services/db';
 import { hasHash, navigate, useRoute } from './services/router';
+import { startForegroundScheduler } from './services/scheduler';
 import './styles/layout.css';
 import './styles/visual-reference.css';
 
@@ -61,6 +62,8 @@ export default function App() {
       alive = false;
     };
   }, []);
+
+  useEffect(() => startForegroundScheduler(), []);
 
   const route = ROUTES[path];
 

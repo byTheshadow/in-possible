@@ -48,6 +48,8 @@ const toDraft = (chat) => ({
   reactionGuide: chat.reactionGuide || '',
   typingStyle: chat.typingStyle || 'dots',
   keepAlive: Boolean(chat.keepAlive),
+  mode: chat.mode === 'reality' ? 'reality' : 'roleplay',
+  permissions: { readCalendar: false, createReminders: false, modifyTodos: false, proactiveChat: false, ...(chat.permissions || {}) },
   bubble: { character: { ...chat.bubbleStyle.character }, user: { ...chat.bubbleStyle.user } },
 });
 
@@ -321,6 +323,8 @@ export default function ChatSettings() {
         bubbleStyle: bubble,
         typingStyle: clean.typingStyle,
         keepAlive: clean.keepAlive,
+        mode: clean.mode,
+        permissions: clean.permissions,
       });
       setChat(updated);
       setPreviewBlob(null);
@@ -454,6 +458,22 @@ export default function ChatSettings() {
           />
           <p className="muted">不填就叫“{defaultName}”。同一个角色可以有好几个对话。</p>
         </div>
+      </section>
+
+      <section className="card stack" aria-labelledby="cs-mode">
+        <h2 id="cs-mode">聊天模式</h2>
+        <fieldset className="cs-fieldset">
+          <legend>这个对话如何理解现实</legend>
+          <label className={`cs-choice${draft.mode === 'reality' ? ' is-on' : ''}`}>
+            <input type="radio" name="cs-mode" value="reality" checked={draft.mode === 'reality'} onChange={() => change('mode', 'reality')} />
+            <span className="cs-choice-text"><span className="cs-choice-title">现实模式</span><span className="cs-choice-hint">把对话当作现实中的陪伴和交流。</span></span>
+          </label>
+          <label className={`cs-choice${draft.mode === 'roleplay' ? ' is-on' : ''}`}>
+            <input type="radio" name="cs-mode" value="roleplay" checked={draft.mode === 'roleplay'} onChange={() => change('mode', 'roleplay')} />
+            <span className="cs-choice-text"><span className="cs-choice-title">角色扮演模式</span><span className="cs-choice-hint">遵守角色核心身份和故事设定。</span></span>
+          </label>
+        </fieldset>
+        <p className="muted">模式只对这个对话有效。普通聊天不会自动改写角色的核心身份。</p>
       </section>
 
       <section className="card stack" aria-labelledby="cs-profile">

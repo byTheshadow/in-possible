@@ -36,6 +36,11 @@ db.version(2).stores({
   images: '++id',
 });
 
+// 版本 3：本地优先的主动消息任务。只在应用打开时计时；重开应用时会补查已到期任务。
+db.version(3).stores({
+  proactiveTasks: '++id, chatId, dueAt, status',
+});
+
 export const getSetting = async (key, fallback = null) => {
   const record = await db.settings.get(key);
   return record && record.value !== undefined ? record.value : fallback;

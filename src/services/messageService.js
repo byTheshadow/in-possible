@@ -35,6 +35,13 @@ export const CHAT_DEFAULTS = {
   bubbleStyle: DEFAULT_BUBBLE_STYLE,
   keepAlive: false,
   typingStyle: 'dots',
+  mode: 'roleplay',
+  permissions: {
+    readCalendar: false,
+    createReminders: false,
+    modifyTodos: false,
+    proactiveChat: false,
+  },
 };
 
 // 旧记录没有新字段时补上默认值
@@ -46,6 +53,8 @@ export const withChatDefaults = (chat) => {
     userProfile: { ...CHAT_DEFAULTS.userProfile, ...(chat.userProfile || {}) },
     bubbleStyle: normalizeBubbleStyle(chat.bubbleStyle),
     unread: Number(chat.unread) || 0,
+    mode: chat.mode === 'reality' ? 'reality' : 'roleplay',
+    permissions: { ...CHAT_DEFAULTS.permissions, ...(chat.permissions || {}) },
   };
 };
 
@@ -193,6 +202,8 @@ export const updateChatSettings = async (chatId, patch) => {
   if ('bubbleStyle' in patch) next.bubbleStyle = normalizeBubbleStyle(patch.bubbleStyle);
   if ('typingStyle' in patch) next.typingStyle = TYPING_STYLES.includes(patch.typingStyle) ? patch.typingStyle : 'dots';
   if ('keepAlive' in patch) next.keepAlive = Boolean(patch.keepAlive);
+  if ('mode' in patch) next.mode = patch.mode === 'reality' ? 'reality' : 'roleplay';
+  if ('permissions' in patch) next.permissions = { ...CHAT_DEFAULTS.permissions, ...(patch.permissions || {}) };
 
   await db.chats.update(id, next);
   // 换了头像或移除了头像：旧图片没人用了，一起删掉
