@@ -1,0 +1,51 @@
+/* src/styles/applist.css */
+.screen:has(.app-bento) { max-width: 72rem; }
+.screen:has(.app-bento) .screen-title-row { align-items: flex-start; }
+.screen:has(.app-bento) .screen-title-row > div { flex: 1; }
+.screen:has(.app-bento) .screen-title-row h1 { font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1.05; }
+.screen:has(.app-bento) .screen-body { margin-top: 1rem; }
+.display-button { flex: none; width: var(--tap); height: var(--tap); display: grid; place-items: center; border: 2px solid var(--border); border-radius: 50%; background: var(--surface); color: var(--text); font: 800 1.05rem/1 var(--font-sans); cursor: pointer; }
+.display-button:hover, .display-button:focus-visible { background: var(--text); color: var(--bg); }
+.presence { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; padding: .25rem 1rem .25rem .6rem; border: 2px solid var(--border); border-radius: 999px; background: var(--surface); font-weight: 700; }
+.presence-dot { width: .8rem; height: .8rem; border-radius: 50%; background: var(--k4); border: 2px solid var(--text); }
+.app-list-topline { margin: 0 0 1rem; }
+.app-bento { display: grid; gap: .75rem; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-areas: "chat chat cal todo" "chat chat remind manual" "continue continue continue continue" "today today settings settings"; }
+.app-chat { grid-area: chat; min-height: 19rem; background: var(--k1); }
+.app-calendar { grid-area: cal; background: var(--k2); }
+.app-todo { grid-area: todo; background: var(--k3); }
+.app-remind { grid-area: remind; background: var(--k4); }
+.app-manual { grid-area: manual; background: var(--accent-c); color: var(--on-accent-c); }
+.app-continue { grid-area: continue; min-height: 10rem; padding: 1.25rem; background: var(--accent); color: var(--on-accent); }
+.app-today { grid-area: today; min-height: 10rem; padding: 1rem 1.25rem; background: var(--surface2); }
+.app-settings { grid-area: settings; min-height: 10rem; padding: 1rem 1.25rem; background: var(--primary-c); color: var(--on-primary-c); }
+.app-card { position: relative; display: flex; flex-direction: column; justify-content: center; min-width: 0; border: 3px solid transparent; border-radius: var(--radius-lg); color: var(--kon); text-decoration: none; overflow: hidden; transition: transform .15s ease, box-shadow .15s ease; }
+.app-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.app-card:active { transform: scale(.98); }
+.app-card:focus-visible { outline: 4px solid var(--text); outline-offset: 4px; }
+.app-card svg { width: 2.25rem; height: 2.25rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.app-square { min-height: 8rem; align-items: center; gap: .5rem; padding: .75rem; text-align: center; }
+.app-card-copy, .app-settings span { display: flex; flex-direction: column; gap: .15rem; }
+.app-square strong { font-size: 1.25rem; }
+.app-square span { font-size: .95rem; font-weight: 600; }
+.chat-scene { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 2.5rem, rgba(0,0,0,.08) 2.55rem 2.65rem), repeating-linear-gradient(90deg, transparent 0 2.5rem, rgba(0,0,0,.08) 2.55rem 2.65rem); }
+.chat-scene::before, .chat-scene::after { content: ''; position: absolute; border-radius: 50%; }
+.chat-scene::before { width: 6rem; height: 6rem; top: 1.5rem; right: 1.25rem; background: #ffb89a; }
+.chat-scene::after { width: 5rem; height: 3rem; top: 5rem; left: 1.25rem; background: var(--surface); border-radius: 1.5rem; box-shadow: 3rem 4rem 0 -0.25rem var(--k2); }
+.chat-plate { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: auto .75rem .75rem; padding: .75rem 1rem; border-radius: 1rem; background: var(--surface); color: var(--text); }
+.chat-plate strong, .chat-plate small { display: block; }
+.chat-plate strong { font-size: 1.6rem; line-height: 1.1; }
+.chat-plate small { margin-top: .2rem; font-size: 1rem; }
+.chat-plate svg, .continue-action svg { flex: none; width: 2rem; height: 2rem; padding: .4rem; border-radius: 50%; background: var(--text); color: var(--bg); }
+.app-overline { font-size: .95rem; font-weight: 700; }
+.app-continue > strong { max-width: 70%; margin: .75rem 0; font-size: 1.35rem; line-height: 1.3; }
+.continue-action { display: inline-flex; align-items: center; gap: .5rem; align-self: flex-start; min-height: var(--tap); padding-left: 1rem; border-radius: 999px; background: var(--on-accent); color: var(--accent); font-weight: 800; }
+.app-today h2 { color: var(--text2); font-size: 1rem; }
+.today-number { display: block; margin: .5rem 0; font-size: 3rem; line-height: .8; }
+.app-today p, .app-settings small { font-size: 1rem; font-weight: 600; line-height: 1.35; }
+.app-settings { flex-direction: row; align-items: center; gap: 1rem; }
+.app-settings strong { font-size: 1.35rem; }
+.app-settings svg { flex: none; }
+@media (max-width: 32rem) { .app-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "chat chat" "cal todo" "remind manual" "continue continue" "today settings"; } .app-chat { min-height: 16rem; } .app-continue > strong { max-width: 100%; } }
+@media (min-width: 60rem) { .screen:has(.app-bento) { padding: 2.5rem; } .app-bento { gap: .9rem; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-areas: "chat chat cal todo remind manual" "chat chat continue continue continue continue" "chat chat today today settings settings"; } .app-chat { min-height: 22rem; } .app-square strong { font-size: 1.35rem; } }
+@media (prefers-reduced-motion: reduce) { .app-card { transition: none; } .app-card:hover, .app-card:active { transform: none; } }
+@media (forced-colors: active) { .app-card, .presence, .display-button { border-color: CanvasText; } }

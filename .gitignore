@@ -2,3 +2,4 @@ node_modules
 dist
 .DS_Store
 *.local
+这是视觉参考，不需要push/
