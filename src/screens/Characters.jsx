@@ -241,7 +241,7 @@ export default function Characters() {
   }
 
   return (
-    <Screen title="角色库" subtitle="在这里新建、修改、导入和导出角色。" actions={actions}>
+    <Screen className="reference-characters" title="角色库" subtitle="在这里新建、修改、导入和导出角色。" actions={actions}>
       <input ref={fileRef} type="file" accept="application/json,.json" className="cl-file" tabIndex={-1} aria-hidden="true" onChange={onFile} />
       {body}
     </Screen>

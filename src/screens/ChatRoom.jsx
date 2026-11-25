@@ -698,6 +698,7 @@ export default function ChatRoom() {
 
   return (
     <Screen
+      className="reference-chat"
       title={character ? character.name : '聊天'}
       docTitle={character ? `和${character.name}聊天` : '聊天'}
       subtitle={subtitle}

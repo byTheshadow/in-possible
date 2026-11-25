@@ -267,7 +267,7 @@ export default function CharacterEdit() {
       message = '没能读出这个角色。请刷新页面再试；如果一直这样，请到诊断页测试数据库。';
     }
     return (
-      <Screen title={isNew ? '新建角色' : '编辑角色'} backTo="/characters" backLabel="返回角色库">
+      <Screen className="reference-character-edit" title={isNew ? '新建角色' : '编辑角色'} backTo="/characters" backLabel="返回角色库">
         {heading ? (
           <div className="card stack" role="alert">
             <h2>{heading}</h2>
@@ -306,6 +306,7 @@ export default function CharacterEdit() {
 
   return (
     <Screen
+      className="reference-character-edit"
       title={isNew ? '新建角色' : '编辑角色'}
       docTitle={isNew ? '新建角色' : `编辑角色 ${saved.name}`}
       subtitle={isNew ? '写好名字和人设，点“创建角色”。' : saved.name}

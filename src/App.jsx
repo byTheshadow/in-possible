@@ -18,6 +18,7 @@ import { announce } from './services/announcer';
 import { getSetting } from './services/db';
 import { hasHash, navigate, useRoute } from './services/router';
 import './styles/layout.css';
+import './styles/visual-reference.css';
 
 // 路由表。日历等页面做好后加到这里。角色库是 /characters，编辑和新建是 /characters/edit（?id=角色id，不带 id 是新建）。聊天室的地址是 /chat?id=聊天id（或 /chat?c=角色id），聊天设置是 /chat/settings?id=聊天id。
 const ROUTES = {

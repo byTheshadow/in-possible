@@ -1,0 +1,72 @@
+/* 聊天与角色页面视觉稿第一版：只覆盖页面外观，功能由现有组件负责。 */
+.reference-chat, .reference-characters, .reference-character-edit {
+  --vr-bg: #fff; --vr-ink: #000; --vr-muted: #505050; --vr-soft: #f1f1ef;
+  --vr-sage: #d6eadb; --vr-orange: #ff6b3d; --vr-lavender: #bba8ff;
+  --vr-yellow: #ffdd3c; --vr-mint: #8fd8b0; --vr-blue: #1745bd; --vr-pink: #ff9ecb;
+  --vr-line: #767676; --vr-radius: 1.4rem;
+  background: var(--vr-bg); color: var(--vr-ink); max-width: 72rem;
+}
+[data-theme='dark'] :is(.reference-chat, .reference-characters, .reference-character-edit) {
+  --vr-bg: #0e0e0e; --vr-ink: #fff; --vr-muted: #bdbdbd; --vr-soft: #232323; --vr-line: #8c8c8c;
+}
+:is(.reference-chat, .reference-characters, .reference-character-edit) .screen-header .brand {
+  font: 800 clamp(2rem, 8vw, 5.5rem)/1 var(--font-sans);
+  letter-spacing: -.05em; text-transform: uppercase; margin-bottom: .9rem;
+}
+:is(.reference-chat, .reference-characters, .reference-character-edit) .screen-title-row h1 {
+  font: 800 clamp(1.7rem, 5vw, 2.5rem)/1.1 var(--font-sans);
+}
+:is(.reference-chat, .reference-characters, .reference-character-edit) .screen-title-row .muted {
+  color: var(--vr-muted); font-weight: 700;
+}
+:is(.reference-chat, .reference-characters, .reference-character-edit) :focus-visible {
+  outline: 4px solid var(--vr-ink); outline-offset: 3px;
+}
+:is(.reference-chat, .reference-characters, .reference-character-edit) [tabindex='-1']:focus { outline: none; }
+:is(.reference-chat, .reference-characters, .reference-character-edit) .btn {
+  border-radius: var(--vr-radius); min-height: var(--tap);
+}
+.reference-chat .screen-body { min-height: 0; }
+.reference-chat .cr-flow { gap: 1rem; }
+.reference-chat .cr-day { background: var(--vr-soft); color: var(--vr-ink); border-radius: var(--vr-radius); }
+.reference-chat .cr-meta { color: var(--vr-muted); }
+.reference-chat .cr-bubble,
+.reference-chat .cr-msg-character .cr-bubble { background: var(--vr-soft); color: var(--vr-ink); border-radius: var(--vr-radius); padding: .75rem 1rem; }
+.reference-chat .cr-msg-user .cr-bubble { background: #ddebdf; color: #000; border-radius: var(--vr-radius); }
+[data-theme='dark'] .reference-chat .cr-msg-user .cr-bubble { background: #1e3325; color: #fff; }
+.reference-chat .cr-input, .reference-chat .cr-composer { border-radius: var(--vr-radius); }
+.reference-chat .cr-input { border: 2px solid var(--vr-line); background: var(--vr-bg); color: var(--vr-ink); }
+.reference-chat .cr-btn-quote { background: var(--vr-lavender); color: #000; border-color: transparent; }
+.reference-chat .cr-btn-reroll { background: var(--vr-pink); color: #000; border-color: transparent; }
+.reference-chat .cr-send { background: var(--vr-sage); color: #000; }
+.reference-chat .cr-btn-row .btn-primary { background: var(--vr-blue); color: #fff; }
+.reference-chat .cr-nav .btn { border: 2px solid var(--vr-line); background: var(--vr-bg); color: var(--vr-ink); }
+.reference-chat .cr-hint { border-radius: var(--vr-radius); }
+.reference-characters .screen-body { margin-top: 1.5rem; }
+.reference-characters .screen-actions { order: 1; margin: 1.25rem 0 0; }
+.reference-characters .screen-body { order: 2; flex: 0 1 auto; margin-top: 1.25rem; }
+.reference-characters .chat-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.reference-characters .chat-actions .btn { flex: 1 1 9rem; }
+.reference-characters .chat-actions .btn-primary { background: var(--vr-orange); color: #000; }
+.reference-characters .chat-actions .btn:nth-child(2) { background: var(--vr-lavender); color: #000; }
+.reference-characters nav .list { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); }
+.reference-characters .chat-card { min-height: 10rem; align-items: center; border-radius: var(--vr-radius); background: var(--vr-sage); color: #000; box-shadow: none; }
+.reference-characters nav .list li:nth-child(4n + 2) .chat-card { background: var(--vr-lavender); }
+.reference-characters nav .list li:nth-child(4n + 3) .chat-card { background: var(--vr-mint); }
+.reference-characters nav .list li:nth-child(4n + 4) .chat-card { background: var(--vr-yellow); }
+.reference-characters .chat-card .chat-preview { color: #202020; }
+.reference-characters .card, .reference-character-edit .card { border-radius: var(--vr-radius); background: var(--vr-soft); color: var(--vr-ink); box-shadow: none; }
+.reference-character-edit .screen-body { display: grid; align-content: start; gap: 1rem; }
+.reference-character-edit .screen-body > .card { padding: 1.25rem; }
+.reference-character-edit .screen-body > .card:nth-of-type(1) { border: 3px solid var(--vr-sage); }
+.reference-character-edit .screen-body > .card:nth-of-type(2) { border: 3px solid var(--vr-lavender); }
+.reference-character-edit .field-input { border: 2px solid var(--vr-line); border-radius: var(--vr-radius); background: var(--vr-bg); color: var(--vr-ink); }
+.reference-character-edit .screen-actions .btn-primary { background: var(--vr-blue); color: #fff; }
+@media (min-width: 60rem) {
+  .reference-character-edit .screen-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reference-character-edit .screen-body > .card:nth-of-type(2) { grid-column: 2; }
+}
+@media (forced-colors: active) {
+  :is(.reference-chat, .reference-characters, .reference-character-edit) .card,
+  .reference-characters .chat-card { border: 2px solid CanvasText; }
+}
