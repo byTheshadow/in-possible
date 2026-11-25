@@ -54,6 +54,7 @@ export const applyAccessibilitySettings = (settings) => {
 
   root.setAttribute('data-theme', next.theme);
   root.style.setProperty('--font-scale', String(next.fontScale));
+  root.setAttribute('data-font-scale', String(next.fontScale));
 
   if (next.largeButtons) root.setAttribute('data-large-buttons', 'true');
   else root.removeAttribute('data-large-buttons');

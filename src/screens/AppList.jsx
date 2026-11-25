@@ -50,12 +50,11 @@ export default function AppList() {
   const recentLabel = recent?.character?.name ? `${recent.character.name}：${recentText}` : recentText;
 
   return (
-    <Screen title="应用列表" subtitle={formatGreeting()} leading={(
+    <Screen title="应用列表" subtitle={formatGreeting()} headerTop={<div className="app-topbar"><span className="presence"><span className="presence-dot" aria-hidden="true" />陪伴空间已准备好</span>
       <button type="button" className="display-button" aria-label="打开无障碍显示设置" onClick={() => { playSound('tap'); navigate('/settings/accessibility'); }}>
         <span aria-hidden="true">Aa</span>
       </button>
-    )}>
-      <div className="app-list-topline"><span className="presence" role="status"><span className="presence-dot" aria-hidden="true" />陪伴空间已准备好</span></div>
+    </div>}>
       <nav aria-label="全部应用">
         <div className="app-bento">
           <AppLink className="app-chat" to="/chats"><span className="chat-scene" aria-hidden="true" /><span className="chat-plate"><span><strong>聊天</strong><small>和角色一起继续故事</small></span><Icon name="arrow" /></span></AppLink>

@@ -107,6 +107,7 @@ export default function ChatList() {
                 </span>
                 {unread > 0 && <span className="chat-unread">未读 {unread}</span>}
               </a>
+              {chat && <a className="chat-manage-link" href={`#/chat/settings?id=${chat.id}`} onClick={() => playSound('tap')}>管理并删除「{character.name} · {dialogName}」对话</a>}
             </li>
           ))}
         </ul>

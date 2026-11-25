@@ -8,7 +8,7 @@ import { navigate } from '../services/router';
 // - 开启单手模式后，内容整体靠下，操作按钮固定在屏幕底部（样式见 layout.css）。
 // - fixed：整页高度等于屏幕，顶部标题区和底部操作区固定不动，只有中间的内容区自己滚动（聊天室用）。
 //   手机弹出键盘时，页面高度跟着可见区域变化，顶部和底部仍然都在屏幕里。
-export default function Screen({ title, docTitle, subtitle, leading, hero = false, fixed = false, backTo, backLabel = '返回', actions, children }) {
+export default function Screen({ title, docTitle, subtitle, leading, headerTop, hero = false, fixed = false, backTo, backLabel = '返回', actions, children }) {
   const headingRef = useRef(null);
 
   useEffect(() => {
@@ -39,6 +39,7 @@ export default function Screen({ title, docTitle, subtitle, leading, hero = fals
   return (
     <div className={fixed ? 'screen screen-fixed' : 'screen'}>
       <header className="screen-header">
+        {headerTop}
         <p className="brand">in-possible</p>
         <div className="screen-title-row">
           {leading}

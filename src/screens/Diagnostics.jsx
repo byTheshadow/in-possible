@@ -3,7 +3,7 @@ import { useState } from 'react';
 import ErrorBoundary from '../components/ErrorBoundary';
 import Screen from '../components/Screen';
 import { announce } from '../services/announcer';
-import { clearChatData, seedSampleCharacters } from '../services/chatService';
+import { clearChatData } from '../services/chatService';
 import { getSetting, setSetting } from '../services/db';
 import { formatBytes, getStorageReport, purgeOrphanImages, requestPersistentStorage } from '../services/imageService';
 import { playSound } from '../services/soundService';
@@ -80,21 +80,6 @@ export default function Diagnostics() {
     playSound(result === true ? 'success' : 'error');
   };
 
-  const seedSamples = async () => {
-    try {
-      const { created, existing } = await seedSampleCharacters();
-      if (created > 0) {
-        announce(`已造好 ${created} 个示例角色`);
-        playSound('success');
-      } else {
-        announce(`已经有 ${existing} 个角色，没有再造。要重新造，请先清空。`);
-      }
-    } catch (error) {
-      announce(`造示例角色失败：${error?.message || '未知错误'}`, { assertive: true });
-      playSound('error');
-    }
-  };
-
   // 清空要点两下：第一下只改按钮文字并播报，第二下才执行
   const clearAll = async () => {
     if (!confirmClear) {
@@ -150,11 +135,7 @@ export default function Diagnostics() {
       </section>
 
       <section className="card stack" aria-labelledby="diag-chat">
-        <h2 id="diag-chat">聊天测试数据</h2>
-        <p className="muted">造 3 个示例角色（小岚有 2 条未读），用来验证聊天列表。已经有角色时不会再造。</p>
-        <button type="button" className="btn btn-primary btn-block" onClick={seedSamples}>
-          造 3 个示例角色
-        </button>
+        <h2 id="diag-chat">本地聊天数据</h2>
         <button type="button" className="btn btn-block" onClick={clearAll}>
           {confirmClear ? '确认清空（再点一次）' : '清空角色和聊天'}
         </button>

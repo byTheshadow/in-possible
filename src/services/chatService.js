@@ -13,17 +13,6 @@
 
 import db from './db';
 
-const newCharacter = (name, now) => ({
-  name,
-  avatar: '',
-  bio: '',
-  extraNotes: '',
-  worldBookIds: [],
-  knowledgeIds: [],
-  voiceProfile: null,
-  updatedAt: now,
-});
-
 export const getCharacter = (characterId) => db.characters.get(Number(characterId));
 
 // 聊天列表用的摘要：每个对话一行，按最近消息时间倒序。
@@ -94,59 +83,6 @@ export const createChat = async (characterId) => {
   const chat = { characterId: id, updatedAt: Date.now(), lastMessage: null, unread: 0 };
   const chatId = await db.chats.add(chat);
   return { ...chat, id: chatId };
-};
-
-// ---------- 开发用：示例数据（诊断页的按钮调用，正式发布前可以去掉） ----------
-
-const buildSamples = (now) => {
-  const startOfToday = new Date(new Date(now).setHours(0, 0, 0, 0)).getTime();
-  const hour = 3600 * 1000;
-  return [
-    {
-      name: '小岚',
-      unread: 2,
-      messages: [
-        { role: 'character', text: '早上好。', at: now - 120000 },
-        { role: 'character', text: '今天感觉怎么样？', at: now - 60000 },
-      ],
-    },
-    {
-      name: '阿澈',
-      unread: 0,
-      messages: [
-        { role: 'user', text: '晚安。', at: startOfToday - 2 * hour - 60000 },
-        { role: 'character', text: '晚安，明天见。', at: startOfToday - 2 * hour },
-      ],
-    },
-    {
-      name: '云舒',
-      unread: 0,
-      messages: [{ role: 'character', text: '这周的安排我帮你理好了。', at: startOfToday - 3 * 24 * hour + 10 * hour }],
-    },
-  ];
-};
-
-// 已经有角色时不再造，避免把真实数据搞乱
-export const seedSampleCharacters = async () => {
-  const existing = await db.characters.count();
-  if (existing > 0) return { created: 0, existing };
-
-  const now = Date.now();
-  const samples = buildSamples(now);
-  await db.transaction('rw', db.characters, db.chats, db.messages, async () => {
-    for (const sample of samples) {
-      const characterId = await db.characters.add(newCharacter(sample.name, now));
-      const last = sample.messages[sample.messages.length - 1];
-      const chatId = await db.chats.add({
-        characterId,
-        updatedAt: last.at,
-        lastMessage: { role: last.role, text: last.text, timestamp: last.at },
-        unread: sample.unread,
-      });
-      await db.messages.bulkAdd(sample.messages.map((m) => ({ chatId, role: m.role, text: m.text, timestamp: m.at })));
-    }
-  });
-  return { created: samples.length, existing: 0 };
 };
 
 // 开发用：清空角色、聊天、消息和图片（不动 settings）
