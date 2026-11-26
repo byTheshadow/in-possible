@@ -65,6 +65,7 @@ export default function AppList() {
           <AppLink className="app-continue" to={recentTarget}><span className="app-overline">{recent?.lastMessage ? `上次聊到 · ${formatListTime(recent.lastMessage.timestamp)}` : '开始第一次对话'}</span><strong>{recentLabel}</strong><span className="continue-action">继续对话 <Icon name="arrow" /></span></AppLink>
           <section className="app-today" aria-labelledby="today-title"><h2 id="today-title">今天</h2><strong className="today-number" aria-hidden="true">—</strong><p>日历、待办和提醒<br />准备好后会显示在这里</p></section>
           <AppLink className="app-settings" to="/settings"><Icon name="settings" /><span><strong>设置</strong><small>角色、语音和主题</small></span></AppLink>
+          <AppLink className="app-memory" to="/memories"><span><strong>长期记忆</strong><small>管理会在聊天中参考的内容</small></span><Icon name="arrow" /></AppLink>
         </div>
       </nav>
     </Screen>

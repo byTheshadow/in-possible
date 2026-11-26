@@ -9,6 +9,7 @@ const ITEMS = [
   { title: '视觉识别', desc: '看图用的接口', to: soonPath('视觉识别', '/settings') },
   { title: '通知与陪伴', desc: '通知开关、提示音、主动消息频率', to: soonPath('通知与陪伴', '/settings') },
   { title: '无障碍', desc: '配色、字号、大按钮、单手模式', to: '/settings/accessibility' },
+  { title: '长期记忆', desc: '查看、编辑和确认聊天中整理出的记忆', to: '/memories' },
   { title: '数据备份', desc: '导出和导入', to: soonPath('数据备份', '/settings') },
   { title: '说明书', desc: '再看一遍怎么用', to: soonPath('说明书', '/settings') },
 ];

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import AccessibilitySettings from './screens/AccessibilitySettings';
 import AiSettings from './screens/AiSettings';
-import AppList from './screens/AppList';
+import AppList from './screens/AppListPaged';
 import CharacterEdit from './screens/CharacterEdit';
 import Characters from './screens/Characters';
 import ChatRoom from './screens/ChatRoom';
@@ -13,11 +13,13 @@ import ChatSettings from './screens/ChatSettings';
 import Diagnostics from './screens/Diagnostics';
 import Placeholder from './screens/Placeholder';
 import Settings from './screens/Settings';
+import Memories from './screens/Memories';
 import Welcome from './screens/Welcome';
 import { announce } from './services/announcer';
 import { getSetting } from './services/db';
 import { hasHash, navigate, useRoute } from './services/router';
 import { startForegroundScheduler } from './services/scheduler';
+import { processDueMemoryJobs } from './services/memoryScheduler';
 import './styles/layout.css';
 import './styles/visual-reference.css';
 
@@ -35,6 +37,7 @@ const ROUTES = {
   '/settings/ai': { Component: AiSettings, label: 'AI 接入' },
   '/settings/accessibility': { Component: AccessibilitySettings, label: '无障碍设置' },
   '/settings/diagnostics': { Component: Diagnostics, label: '诊断页' },
+  '/memories': { Component: Memories, label: '长期记忆' },
   '/soon': { Component: Placeholder, label: '建设中' },
 };
 
@@ -63,7 +66,11 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => startForegroundScheduler(), []);
+  useEffect(() => {
+    const stopScheduler = startForegroundScheduler();
+    processDueMemoryJobs().catch(() => {});
+    return stopScheduler;
+  }, []);
 
   const route = ROUTES[path];
 

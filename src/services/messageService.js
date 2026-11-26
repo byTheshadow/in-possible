@@ -12,13 +12,16 @@
 //   variantIndex  当前显示的是第几条（从 0 开始）。旧消息没有，读取时取最后一条
 //
 // chats 记录在 chatService.js 里已有 characterId、updatedAt、lastMessage、unread。
-// 聊天设置字段（name、userProfile、systemPrompt、reactionGuide、keepAlive、typingStyle）
+// 聊天设置字段（name、userProfile、systemPrompt、reactionGuide、keepAlive、typingStyle、mode、context、permissions）
 // 在这里给出默认值，聊天设置页（包 2c-1）通过 updateChatSettings 写入。
 //   name          对话名。空的时候显示“对话 1、对话 2……”（同一个角色的聊天按 id 排名）
 //   userProfile   { avatarImageId（images 表里的图片 id，null 是用名字首字）, name, persona, inputHint,
 //                   avatar（旧版本存的 data 地址，读聊天时会自动转成图片 id，转完是空）}
 //   bubbleStyle   气泡颜色，{ character, user }，每边 { preset, bg, fg }（见 bubbleStyle.js）
 //   keepAlive     后台保活开关，现在只存开关，真正的保活到做提醒之前再加
+//   mode          'roleplay' | 'reality'，每个聊天独立选择
+//   context       本聊天使用的上下文策略版本；策略由代码决定
+//   permissions   本聊天可用的站内能力，默认全部关闭
 
 import db from './db';
 import { getCharacter, getOrCreateChat } from './chatService';
@@ -36,6 +39,7 @@ export const CHAT_DEFAULTS = {
   keepAlive: false,
   typingStyle: 'dots',
   mode: 'roleplay',
+  context: { promptVersion: 1, characterCore: 'stable' },
   permissions: {
     readCalendar: false,
     createReminders: false,
@@ -54,6 +58,7 @@ export const withChatDefaults = (chat) => {
     bubbleStyle: normalizeBubbleStyle(chat.bubbleStyle),
     unread: Number(chat.unread) || 0,
     mode: chat.mode === 'reality' ? 'reality' : 'roleplay',
+    context: { ...CHAT_DEFAULTS.context, ...(chat.context || {}) },
     permissions: { ...CHAT_DEFAULTS.permissions, ...(chat.permissions || {}) },
   };
 };
@@ -203,6 +208,7 @@ export const updateChatSettings = async (chatId, patch) => {
   if ('typingStyle' in patch) next.typingStyle = TYPING_STYLES.includes(patch.typingStyle) ? patch.typingStyle : 'dots';
   if ('keepAlive' in patch) next.keepAlive = Boolean(patch.keepAlive);
   if ('mode' in patch) next.mode = patch.mode === 'reality' ? 'reality' : 'roleplay';
+  if ('context' in patch) next.context = { ...CHAT_DEFAULTS.context, ...(patch.context || {}) };
   if ('permissions' in patch) next.permissions = { ...CHAT_DEFAULTS.permissions, ...(patch.permissions || {}) };
 
   await db.chats.update(id, next);

@@ -20,6 +20,8 @@ import {
 import { navigate, useRoute } from '../services/router';
 import { playSound } from '../services/soundService';
 import { formatClock } from '../services/timeFormat';
+import { getChatMemoryContext } from '../services/memoryRetrieval';
+import { scheduleMemoryProcessing } from '../services/memoryScheduler';
 import '../styles/chat.css';
 import '../styles/chatroom.css';
 
@@ -304,12 +306,18 @@ export default function ChatRoom() {
     if (focusPrimary) window.setTimeout(() => primaryRef.current && primaryRef.current.focus(), 0);
 
     try {
+      const memoryContext = await getChatMemoryContext({
+        chatId: chat.id,
+        userText: history.filter((message) => message.role === 'user').slice(-1)[0]?.text || '',
+        recentMessages: history,
+      }).catch(() => '');
       const payload = buildChatMessages({
         character,
         chat,
         history,
         allMessages: messages,
         userName: chat.userProfile.name || '用户',
+        memoryContext,
       });
       const reply = await requestReply({ config, messages: payload, signal: controller.signal });
       if (controller.signal.aborted) throw new AiError('已暂停', 'aborted');
@@ -321,6 +329,7 @@ export default function ChatRoom() {
       } else {
         const savedReply = await addCharacterMessage({ chatId: chat.id, text: reply });
         setMessages((previous) => [...previous, savedReply]);
+        scheduleMemoryProcessing(chat.id, { text: history.filter((message) => message.role === 'user').slice(-1)[0]?.text || '' }).catch(() => {});
         if (!controller.leaving) announce(`${character.name}回复：${reply}`);
       }
       if (!controller.leaving) playSound('receive');

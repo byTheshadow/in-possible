@@ -41,6 +41,14 @@ db.version(3).stores({
   proactiveTasks: '++id, chatId, dueAt, status',
 });
 
+// 版本 4：长期记忆核心表。非索引字段直接存在记录里，读取时由 memoryService 补默认值。
+db.version(4).stores({
+  memories: '++id, &memoryId, chatId, type, status, updatedAt',
+  memoryCandidates: '++id, &candidateId, chatId, status, updatedAt',
+  memoryRevisions: '++id, &revisionId, memoryId, chatId, createdAt',
+  memoryJobs: '++id, &chatId, status, lastProcessedMessageId, updatedAt',
+});
+
 export const getSetting = async (key, fallback = null) => {
   const record = await db.settings.get(key);
   return record && record.value !== undefined ? record.value : fallback;
